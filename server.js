@@ -5,6 +5,7 @@ const path=require('path');
 const crypto=require('crypto');
 const app=express();
 const PORT=process.env.PORT||10000;
+app.set('trust proxy', 1);
 
 // Demo/runtime storage. For permanent production data, connect a database such as PostgreSQL/Supabase.
 let users=[];
