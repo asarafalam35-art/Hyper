@@ -1,11 +1,12 @@
 {
-  "name": "hyper-social-v4",
-  "version": "4.0.0",
-  "private": true,
-  "scripts": { "start": "node server.js" },
-  "dependencies": {
-    "bcryptjs": "^2.4.3",
-    "cookie-parser": "^1.4.7",
-    "express": "^4.21.2"
+  "name":"hyper-social-v7",
+  "version":"7.0.0",
+  "private":true,
+  "scripts":{"start":"node server.js"},
+  "dependencies":{
+    "@supabase/supabase-js":"^2.57.4",
+    "bcryptjs":"^3.0.2",
+    "cookie-parser":"^1.4.7",
+    "express":"^5.1.0"
   }
 }
