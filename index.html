@@ -42,7 +42,7 @@ header{height:78px;position:sticky;top:0;z-index:20;background:#fff;border-botto
 <div id="toast"></div>
 
 <script>
-let me=null, posts=[], authLogin=true, activeId=null, toastTimer;
+let me=null, posts=[], authLogin=true, activeId=null, toastTimer, profileTab='post';
 const $=id=>document.getElementById(id);
 function toast(x){$('toast').textContent=x;$('toast').style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').style.display='none',1600)}
 function openM(id){$(id).style.display='flex'}function closeM(id){$(id).style.display='none'}
