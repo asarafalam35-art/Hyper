@@ -1,94 +1,82 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Hyper Social</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Hyper</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#f5f5f7;color:#111;font-family:Arial,sans-serif;padding-bottom:100px}
-button,input,textarea{font:inherit}button{border:0;background:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
-header{height:76px;position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid #ddd;padding:0 18px;display:flex;align-items:center;justify-content:space-between}
-.logo{font-size:30px;font-weight:900}.headBtns{display:flex;gap:16px}.bigbtn{min-width:58px;min-height:58px;padding:12px;font-size:32px;border-radius:16px}.bigbtn:active,.nav button:active,.postBtn:active{background:#eee;transform:scale(.94)}
-.wrap{max-width:650px;margin:auto}.stories{display:flex;gap:22px;overflow:auto;padding:22px 18px;background:#fff}
-.story{min-width:78px;text-align:center;font-size:14px}.avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#ff8a00,#e60073);margin:auto;display:grid;place-items:center;color:#fff;font-size:25px;font-weight:bold;border:3px solid white;outline:3px solid #e60073}
-.story button{width:100%;padding:4px}.post{background:#fff;border:1px solid #ddd;margin:16px 0}.head{padding:14px 16px;font-weight:800;display:flex;align-items:center;justify-content:space-between}.photo{height:500px;background:linear-gradient(135deg,#542080,#151515);display:grid;place-items:center;color:#fff;font-size:80px;background-size:cover;background-position:center}
-.actions{display:flex;gap:8px;padding:10px 12px}.action{min-width:58px;min-height:58px;padding:10px;font-size:30px;border-radius:15px}.caption{padding:0 17px 16px}.comments{padding:0 17px 16px}.comment{padding:5px 0}.comment b{margin-right:6px}.commentForm{display:flex;gap:8px;margin-top:10px}.commentForm input{flex:1;padding:12px;border:1px solid #bbb;border-radius:12px}.postBtn{padding:12px 16px;border-radius:12px;background:#111;color:white}
-.nav{position:fixed;z-index:30;bottom:0;left:0;right:0;height:88px;background:#fff;border-top:1px solid #ccc;display:flex;justify-content:space-around;align-items:center;padding-bottom:env(safe-area-inset-bottom)}
-.nav button{min-width:68px;min-height:68px;padding:14px 20px;font-size:34px;border-radius:18px}
-.modal{display:none;position:fixed;z-index:50;inset:0;background:#0008;align-items:flex-end}.sheet{background:#fff;width:100%;max-height:88vh;overflow:auto;border-radius:24px 24px 0 0;padding:24px 20px}.close{float:right;font-size:30px}.sheet h2{margin:4px 0 22px}
-.field{width:100%;padding:15px;margin:7px 0;border:1px solid #bbb;border-radius:13px}.full{width:100%;padding:16px;margin-top:10px;border-radius:13px;background:#111;color:white;font-weight:bold}
-.profile{padding:22px 18px}.profileTop{display:flex;gap:20px;align-items:center}.profileAvatar{width:88px;height:88px;border-radius:50%;background:linear-gradient(135deg,#ff8a00,#e60073);display:grid;place-items:center;color:#fff;font-size:35px;font-weight:bold}.stats{display:flex;justify-content:space-around;flex:1;text-align:center}.stats b{display:block;font-size:20px}.bio{margin:20px 0}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:3px}.grid div{aspect-ratio:1;background:linear-gradient(135deg,#542080,#222);display:grid;place-items:center;color:#fff;font-size:35px}
+*{box-sizing:border-box}body{margin:0;background:#f5f5f7;color:#111;font-family:Arial,sans-serif;padding-bottom:100px}button,input,textarea{font:inherit}button{border:0;background:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
+header{height:78px;position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid #ddd;padding:0 20px;display:flex;align-items:center;justify-content:space-between}.logo{font-size:31px;font-weight:900;letter-spacing:-1px}.headBtns{display:flex;gap:16px}.big{min-width:58px;min-height:58px;padding:10px;font-size:32px;border-radius:16px}.big:active,.nav button:active,.btn:active{background:#eee;transform:scale(.94)}
+.wrap{max-width:680px;margin:auto}.stories{display:flex;gap:23px;overflow-x:auto;padding:22px 18px;background:#fff}.story{min-width:80px;text-align:center;font-size:14px}.avatar{width:74px;height:74px;border-radius:50%;background:linear-gradient(135deg,#ff8a00,#e60073);margin:auto;display:grid;place-items:center;color:#fff;font-size:25px;font-weight:800;border:3px solid #fff;outline:3px solid #e60073;overflow:hidden}.avatar img,.profileAvatar img{width:100%;height:100%;object-fit:cover}.story button{width:100%;padding:4px}
+.post{background:#fff;border:1px solid #ddd;margin:16px 0}.postHead{display:flex;align-items:center;gap:12px;padding:13px 15px}.postHead .avatar{width:48px;height:48px;outline:2px solid #e60073;font-size:17px}.postIdentity{flex:1}.postIdentity b{display:block;font-size:16px}.postIdentity small{color:#777}.more{font-size:30px;padding:8px}.photo{min-height:470px;background:linear-gradient(135deg,#542080,#171717);background-size:cover;background-position:center;display:grid;place-items:center;color:#fff;font-size:80px}.actions{display:flex;align-items:center;gap:7px;padding:8px 12px}.act{min-width:57px;min-height:57px;padding:10px;font-size:30px;border-radius:15px}.likes{padding:0 17px 5px;font-weight:700}.caption{padding:3px 17px 14px;line-height:1.45}.nav{position:fixed;z-index:30;bottom:0;left:0;right:0;height:88px;background:#fff;border-top:1px solid #ccc;display:flex;justify-content:space-around;align-items:center;padding-bottom:env(safe-area-inset-bottom)}.nav button{min-width:68px;min-height:68px;padding:14px 20px;font-size:34px;border-radius:18px}
+.modal{display:none;position:fixed;z-index:50;inset:0;background:#0008;align-items:flex-end}.sheet{background:#fff;width:100%;max-height:90vh;overflow:auto;border-radius:25px 25px 0 0;padding:24px 20px}.close{float:right;font-size:31px}.sheet h2{margin:4px 0 22px}.field{width:100%;padding:15px;margin:7px 0;border:1px solid #bbb;border-radius:13px;background:#fff}.full{width:100%;padding:16px;margin-top:10px;border-radius:13px;background:#111;color:#fff;font-weight:700}.secondary{background:#eee;color:#111}.comment{padding:13px 0;border-bottom:1px solid #eee}.commentTop{display:flex;align-items:center;gap:8px}.commentAvatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#ff8a00,#e60073);display:grid;place-items:center;color:#fff;font-size:14px;font-weight:800;overflow:hidden}.commentAvatar img{width:100%;height:100%;object-fit:cover}.commentBody{padding:4px 0 0 42px;line-height:1.4}.commentMeta{color:#777;font-size:12px;margin-left:4px}.commentMenu{margin-left:auto;display:flex;gap:4px}.commentMenu button{font-size:13px;padding:5px 8px;border-radius:8px;background:#eee}.commentEdit{display:flex;gap:7px;margin-top:8px}.commentEdit input{flex:1}.commentEdit button{padding:9px 11px;border-radius:9px;background:#111;color:#fff}.comment b{margin-right:6px}.commentForm{display:flex;gap:8px;position:sticky;bottom:0;background:#fff;padding-top:12px}.commentForm input{flex:1}.commentActions{display:flex;gap:10px;margin:15px 0}.commentActions button{padding:13px 17px;border:1px solid #ddd;border-radius:13px}.profile{padding:24px 18px}.profileTop{display:flex;gap:18px;align-items:center}.profileAvatar{width:92px;height:92px;border-radius:50%;background:linear-gradient(135deg,#ff8a00,#e60073);display:grid;place-items:center;color:#fff;font-size:36px;font-weight:800;overflow:hidden}.stats{display:flex;justify-content:space-around;flex:1;text-align:center}.stats b{display:block;font-size:21px}.bio{margin:20px 0;line-height:1.45}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:3px}.grid div{aspect-ratio:1;background:linear-gradient(135deg,#542080,#222);display:grid;place-items:center;color:#fff;font-size:30px;overflow:hidden}.grid img{width:100%;height:100%;object-fit:cover}.row{display:flex;align-items:center;justify-content:space-between;padding:16px 0;border-bottom:1px solid #ddd}.switch{width:52px;height:30px;border-radius:20px;background:#bbb;position:relative}.switch i{position:absolute;width:24px;height:24px;top:3px;left:3px;border-radius:50%;background:#fff;transition:.2s}.switch.on{background:#111}.switch.on i{left:25px}.tabs{display:flex;gap:8px;margin:15px 0}.tabs button{padding:12px 16px;border-radius:12px;background:#eee}.empty{text-align:center;padding:45px;color:#666}body.dark{background:#151515;color:#eee}body.dark header,body.dark .stories,body.dark .post,body.dark .nav,body.dark .sheet,body.dark .commentForm{background:#202020;color:#eee}body.dark .field{background:#2b2b2b;color:#fff;border-color:#555}body.dark .row{border-color:#444}
 #toast{position:fixed;z-index:100;bottom:105px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:13px 19px;border-radius:30px;display:none}
-.empty{padding:50px;text-align:center;color:#666}
 </style>
 </head>
 <body>
-<header><button class="bigbtn" onclick="goHome()">HYPER</button><div class="headBtns"><button class="bigbtn" onclick="openSearch()">⌕</button><button class="bigbtn" onclick="toast('Messages opened')">✉</button></div></header>
+<header><button class="big logo" onclick="home()">HYPER</button><div class="headBtns"><button class="big" onclick="searchOpen()">⌕</button><button class="big" onclick="toast('Messages')">✉</button></div></header>
 <main id="app"></main>
+<nav class="nav"><button onclick="home()">⌂</button><button onclick="searchOpen()">⌕</button><button onclick="createOpen()">＋</button><button onclick="activity()">♡</button><button onclick="profile()">◯</button></nav>
 
-<nav class="nav">
-<button onclick="goHome()">⌂</button><button onclick="openSearch()">⌕</button><button onclick="openCreate()">＋</button><button onclick="showActivity()">♡</button><button onclick="showProfile()">◯</button>
-</nav>
+<div id="auth" class="modal"><div class="sheet"><button class="close" onclick="closeM('auth')">×</button><h2 id="authTitle">Login</h2><input id="aName" class="field" placeholder="Name" style="display:none"><input id="aUser" class="field" placeholder="Username" style="display:none"><input id="aEmail" class="field" placeholder="Email"><input id="aPass" class="field" type="password" placeholder="Password (6+ characters)"><button class="full" onclick="authGo()">Continue</button><button class="full secondary" onclick="authToggle()">Create account / Login</button></div></div>
 
-<div id="searchModal" class="modal"><div class="sheet"><button class="close" onclick="closeModal('searchModal')">×</button><h2>Search</h2><input id="searchInput" class="field" placeholder="Search users or posts" oninput="renderSearch()"><div id="searchResults"></div></div></div>
+<div id="create" class="modal"><div class="sheet"><button class="close" onclick="closeM('create')">×</button><h2>Create post</h2><textarea id="caption" class="field" rows="3" placeholder="Write something..."></textarea><input id="photo" class="field" type="file" accept="image/*"><button class="full" onclick="publish()">Publish</button></div></div>
 
-<div id="createModal" class="modal"><div class="sheet"><button class="close" onclick="closeModal('createModal')">×</button><h2>Create post</h2><input id="postText" class="field" placeholder="Write a caption..."><input id="postFile" class="field" type="file" accept="image/*"><button class="full" onclick="createPost()">Publish post</button></div></div>
+<div id="comments" class="modal"><div class="sheet"><button class="close" onclick="closeM('comments')">×</button><h2>Comments</h2><div id="commentList"></div><div class="commentForm"><input id="commentInput" class="field" placeholder="Add a comment"><button class="full" style="width:auto;margin:7px 0" onclick="commentAdd()">Post</button></div></div></div>
 
-<div id="authModal" class="modal"><div class="sheet"><h2 id="authTitle">Login</h2><input id="authName" class="field" placeholder="Username" style="display:none"><input id="authEmail" class="field" placeholder="Email"><input id="authPass" class="field" type="password" placeholder="Password"><button class="full" onclick="authAction()">Continue</button><button class="full" style="background:#eee;color:#111" onclick="toggleAuth()">Create account / Login</button></div></div>
+<div id="search" class="modal"><div class="sheet"><button class="close" onclick="closeM('search')">×</button><h2>Search</h2><input id="searchInput" class="field" placeholder="Search users or posts" oninput="searchRender()"><div id="searchResults"></div></div></div>
 
-<div id="commentModal" class="modal"><div class="sheet"><button class="close" onclick="closeModal('commentModal')">×</button><h2>Comments</h2><div id="commentList"></div><div class="commentForm"><input id="commentInput" placeholder="Write a comment"><button class="postBtn" onclick="addComment()">Post</button></div></div></div>
+<div id="edit" class="modal"><div class="sheet"><button class="close" onclick="closeM('edit')">×</button><h2>Edit profile</h2><input id="eName" class="field" placeholder="Name"><input id="eUser" class="field" placeholder="Username"><textarea id="eBio" class="field" rows="3" placeholder="Bio"></textarea><input id="eAvatar" class="field" type="file" accept="image/*"><button class="full" onclick="profileSave()">Save changes</button></div></div>
+
+<div id="settings" class="modal"><div class="sheet"><button class="close" onclick="closeM('settings')">×</button><h2>Settings</h2><div class="row">Dark mode <button id="darkSwitch" class="switch" onclick="toggleDark()"><i></i></button></div><div class="row">Private profile <button id="privateSwitch" class="switch" onclick="togglePrivate()"><i></i></button></div><div class="row">Notifications <button id="notifySwitch" class="switch" onclick="toggleNotify()"><i></i></button></div><button class="full secondary" onclick="logout()">Log out</button></div></div>
 <div id="toast"></div>
 
 <script>
-const seed=[
-{id:1,user:"hyper_user",caption:"Welcome to Hyper! 🚀",image:"",likes:3,liked:false,comments:["Amazing app!","Welcome 🔥"]},
-{id:2,user:"creator",caption:"Share your world.",image:"",likes:8,liked:false,comments:["Nice post!"]}
-];
-let data=JSON.parse(localStorage.getItem("hyperData")||"null")||seed;
-let currentUser=localStorage.getItem("hyperUser")||"guest";
-let authLogin=true, activeCommentId=null, toastTimer;
-
-function save(){localStorage.setItem("hyperData",JSON.stringify(data));localStorage.setItem("hyperUser",currentUser)}
-function toast(x){let t=document.getElementById("toast");t.textContent=x;t.style.display="block";clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.style.display="none",1600)}
-function modal(id,on=true){document.getElementById(id).style.display=on?"flex":"none"} function closeModal(id){modal(id,false)}
-function goHome(){renderHome();scrollTo({top:0,behavior:"smooth"})}
-
+let me=null, posts=[], authLogin=true, activeId=null, toastTimer;
+const $=id=>document.getElementById(id);
+function toast(x){$('toast').textContent=x;$('toast').style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').style.display='none',1600)}
+function openM(id){$(id).style.display='flex'}function closeM(id){$(id).style.display='none'}
+async function api(url,opt={}){let r=await fetch(url,{headers:{'Content-Type':'application/json',...(opt.headers||{})},...opt});let d={};try{d=await r.json()}catch{}if(!r.ok)throw new Error(d.error||'Something went wrong');return d}
+async function init(){let m=await api('/api/me');me=m.user;await load();home()}
+async function load(){let d=await api('/api/posts');posts=d.posts}
+function avatarHTML(u,cls='avatar'){return u?.avatar?.startsWith('data:')?`<div class="${cls}"><img src="${u.avatar}"></div>`:`<div class="${cls}">${(u?.avatar||u?.username||'?')[0].toUpperCase()}</div>`}
+function postAvatar(p){return p.avatar?.startsWith('data:')?`<div class="avatar"><img src="${p.avatar}"></div>`:`<div class="avatar">${(p.avatar||p.username||'?')[0].toUpperCase()}</div>`}
+function home(){renderHome();scrollTo({top:0,behavior:'smooth'})}
 function renderHome(){
-document.getElementById("app").innerHTML=`<section class="stories">
-<div class="story"><button onclick="openCreate()"><div class="avatar">+</div></button>Your story</div>
-<div class="story"><button onclick="toast('Alex story')"><div class="avatar">A</div></button>Alex</div>
-<div class="story"><button onclick="toast('Rahul story')"><div class="avatar">R</div></button>Rahul</div>
-<div class="story"><button onclick="toast('Sarah story')"><div class="avatar">S</div></button>Sarah</div>
-</section><div class="wrap">${data.map(postHTML).join("")}</div>`;
+let stories=`<section class="stories"><div class="story"><button onclick="createOpen()"><div class="avatar">+</div></button>Your story</div><div class="story"><button onclick="toast('Alex story')"><div class="avatar">A</div></button>Alex</div><div class="story"><button onclick="toast('Rahul story')"><div class="avatar">R</div></button>Rahul</div><div class="story"><button onclick="toast('Sarah story')"><div class="avatar">S</div></button>Sarah</div></section>`;
+$('app').innerHTML=stories+`<div class="wrap">${posts.map(p=>postHTML(p)).join('')||'<div class="empty">No posts yet. Create your first post.</div>'}</div>`;
 }
 function postHTML(p){
-let img=p.image?`style="background-image:url('${p.image}')"`:`style=""`;
-return `<article class="post"><div class="head"><span>${esc(p.user)}</span><button class="bigbtn" onclick="toast('Post menu')">⋯</button></div><div class="photo" ${img}>${p.image?"":"H"}</div>
-<div class="actions"><button class="action" onclick="like(${p.id})">${p.liked?"♥":"♡"}</button><button class="action" onclick="openComments(${p.id})">💬</button><button class="action" onclick="sharePost(${p.id})">↗</button><button class="action" onclick="toast('Saved')">🔖</button></div>
-<div class="caption"><b>${esc(p.user)}</b> ${esc(p.caption)}</div><div class="comments">${p.comments.slice(-2).map(c=>`<div class="comment"><b>user</b>${esc(c)}</div>`).join("")}</div></article>`;
+let liked=me&&p.likedBy?.includes(me.id),saved=me&&p.savedBy?.includes(me.id);
+let bg=p.image?`style="background-image:url('${p.image}')"`:'';
+return `<article class="post"><div class="postHead">${postAvatar(p)}<div class="postIdentity"><b>${esc(p.name||p.username)}</b><small>@${esc(p.username)}</small></div><button class="more" onclick="toast('Post options')">⋯</button></div><div class="photo" ${bg}>${p.image?'':'H'}</div><div class="actions"><button class="act" onclick="like('${p.id}')">${liked?'♥':'♡'}</button><button class="act" onclick="commentsOpen('${p.id}')">💬</button><button class="act" onclick="sharePost('${p.id}')">↗</button><button class="act" onclick="savePost('${p.id}')">${saved?'🔖':'🔖'}</button></div><div class="likes">${p.likes||0} likes</div><div class="caption"><b>${esc(p.username)}</b> ${esc(p.caption||'')}</div></article>`
 }
-function like(id){let p=data.find(x=>x.id===id);p.liked=!p.liked;p.likes+=p.liked?1:-1;save();renderHome();toast(p.liked?"Liked":"Like removed")}
-function openComments(id){activeCommentId=id;document.getElementById("commentList").innerHTML=data.find(p=>p.id===id).comments.map(c=>`<div class="comment"><b>user</b>${esc(c)}</div>`).join("")||'<div class="empty">No comments yet</div>';modal("commentModal")}
-function addComment(){let i=document.getElementById("commentInput"),v=i.value.trim();if(!v)return;data.find(p=>p.id===activeCommentId).comments.push(v);i.value="";save();openComments(activeCommentId);renderHome()}
-function sharePost(id){navigator.clipboard?.writeText(location.href).catch(()=>{});toast("Post link copied")}
-function openCreate(){modal("createModal")}
-function createPost(){
-let caption=document.getElementById("postText").value.trim()||"My new Hyper post";
-let file=document.getElementById("postFile").files[0];
-let add=(image)=>{data.unshift({id:Date.now(),user:currentUser==="guest"?"hyper_user":currentUser,caption,image:image||"",likes:0,liked:false,comments:[]});save();closeModal("createModal");document.getElementById("postText").value="";document.getElementById("postFile").value="";renderHome();toast("Post published")};
-if(file){let r=new FileReader();r.onload=()=>add(r.result);r.readAsDataURL(file)}else add("");
-}
-function openSearch(){modal("searchModal");renderSearch()}
-function renderSearch(){let q=document.getElementById("searchInput").value.toLowerCase();document.getElementById("searchResults").innerHTML=data.filter(p=>p.user.toLowerCase().includes(q)||p.caption.toLowerCase().includes(q)).map(p=>`<div class="comment"><b>${esc(p.user)}</b> ${esc(p.caption)}</div>`).join("")||'<div class="empty">No results</div>'}
-function showActivity(){document.getElementById("app").innerHTML='<div class="empty"><h2>Activity</h2><p>Your likes, comments and follows will appear here.</p></div>'}
-function showProfile(){
-let name=currentUser==="guest"?"hyper_user":currentUser;
-document.getElementById("app").innerHTML=`<section class="profile"><div class="profileTop"><div class="profileAvatar">${name[0].toUpperCase()}</div><div class="stats"><div><b>${data.filter(p=>p.user===name).length}</b>Posts</div><div><b>245</b>Followers</div><div><b>180</b>Following</div></div></div><div class="bio"><b>${esc(name)}</b><br>Welcome to my Hyper profile.</div><button class="full" onclick="openAuth()">Login / Switch account</button><h3>Posts</h3><div class="grid">${data.filter(p=>p.user===name).map(p=>`<div>${p.image?"🖼️":"H"}</div>`).join("")||"<div>No posts</div>"}</div></section>`;
-}
-function openAuth(){authLogin=true;document.getElementById("authTitle").textContent="Login";document.getElementById("authName").style.display="none";modal("authModal")}
-function toggleAuth(){authLogin=!authLogin;document.getElementById("authTitle").textContent=authLogin?"Login":"Create account";document.getElementById("authName").style.display=authLogin?"none":"block"}
-function authAction(){let n=document.getElementById("authName").value.trim(),e=document.getElementById("authEmail").value.trim(),p=document.getElementById("authPass").value;if(!e||!p||( !authLogin&&!n)){toast("Fill all fields");return}currentUser=authLogin?(e.split("@")[0]||"user"):n;save();closeModal("authModal");showProfile();toast(authLogin?"Logged in":"Account created")}
-function esc(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
-renderHome();
+async function like(id){if(!me){return authOpen()}try{await api('/api/posts/'+id+'/like',{method:'POST'});await load();renderHome()}catch(e){toast(e.message)}}
+function commentAvatarHTML(c){return c.avatar?.startsWith('data:')?`<div class="commentAvatar"><img src="${c.avatar}"></div>`:`<div class="commentAvatar">${esc((c.avatar||c.userName||'?')[0].toUpperCase())}</div>`}
+function commentsOpen(id){activeId=id;let p=posts.find(x=>x.id===id);$('commentInput').value='';$('commentList').innerHTML=(p.comments||[]).map(c=>{let own=me&&c.userId===me.id;return `<div class="comment" id="comment-${c.id}"><div class="commentTop">${commentAvatarHTML(c)}<b>@${esc(c.userName)}</b>${c.edited?'<span class="commentMeta">edited</span>':''}${own?`<div class="commentMenu"><button onclick="editComment('${c.id}')">Edit</button><button onclick="deleteComment('${c.id}')">Delete</button></div>`:''}</div><div class="commentBody" id="commentBody-${c.id}">${esc(c.text)}</div></div>`}).join('')||'<div class="empty">No comments yet.</div>';openM('comments')}
+async function commentAdd(){if(!me)return authOpen();let v=$('commentInput').value.trim();if(!v)return;try{await api('/api/posts/'+activeId+'/comments',{method:'POST',body:JSON.stringify({text:v})});$('commentInput').value='';await load();commentsOpen(activeId);renderHome()}catch(e){toast(e.message)}}
+async function savePost(id){if(!me)return authOpen();try{let d=await api('/api/posts/'+id+'/save',{method:'POST'});await load();renderHome();toast(d.saved?'Saved':'Removed from saved')}catch(e){toast(e.message)}}
+async function sharePost(id){let url=location.origin+'/#post-'+id;try{await navigator.clipboard?.writeText(url)}catch{}toast('Post link copied')}
+async function editComment(id){let c=(posts.find(p=>p.id===activeId)?.comments||[]).find(x=>x.id===id);if(!c)return;let body=$('commentBody-'+id);body.innerHTML=`<div class="commentEdit"><input class="field" id="editComment-${id}" value="${esc(c.text)}"><button onclick="saveComment('${id}')">Save</button><button onclick="commentsOpen('${activeId}')">Cancel</button></div>`;setTimeout(()=>{$('editComment-'+id)?.focus()},0)}
+async function saveComment(id){let input=$('editComment-'+id);if(!input)return;let text=input.value.trim();if(!text)return toast('Comment is empty.');try{await api('/api/posts/'+activeId+'/comments/'+id,{method:'PUT',body:JSON.stringify({text})});await load();commentsOpen(activeId);renderHome();toast('Comment updated')}catch(e){toast(e.message)}}
+async function deleteComment(id){if(!confirm('Delete this comment?'))return;try{await api('/api/posts/'+activeId+'/comments/'+id,{method:'DELETE'});await load();commentsOpen(activeId);renderHome();toast('Comment deleted')}catch(e){toast(e.message)}}
+function createOpen(){if(!me)return authOpen();openM('create')}
+async function publish(){let caption=$('caption').value.trim(),f=$('photo').files[0];let image='';if(f){if(f.size>4*1024*1024)return toast('Image must be under 4MB');image=await new Promise(ok=>{let r=new FileReader();r.onload=()=>ok(r.result);r.readAsDataURL(f)})}try{await api('/api/posts',{method:'POST',body:JSON.stringify({caption,image})});closeM('create');$('caption').value='';$('photo').value='';await load();home();toast('Post published')}catch(e){toast(e.message)}}
+function authOpen(){authLogin=true;$('authTitle').textContent='Login';$('aName').style.display='none';$('aUser').style.display='none';openM('auth')}
+function authToggle(){authLogin=!authLogin;$('authTitle').textContent=authLogin?'Login':'Create account';$('aName').style.display=authLogin?'none':'block';$('aUser').style.display=authLogin?'none':'block'}
+async function authGo(){let email=$('aEmail').value,pass=$('aPass').value;try{let d;if(authLogin)d=await api('/api/login',{method:'POST',body:JSON.stringify({email,password:pass})});else d=await api('/api/register',{method:'POST',body:JSON.stringify({name:$('aName').value,username:$('aUser').value,email,password:pass})});me=d.user;closeM('auth');await load();profile();toast(authLogin?'Logged in':'Account created')}catch(e){toast(e.message)}}
+function profile(){if(!me)return authOpen();let mine=posts.filter(p=>p.userId===me.id);$('app').innerHTML=`<section class="profile"><div class="profileTop">${avatarHTML(me,'profileAvatar')}<div class="stats"><div><b>${mine.length}</b>Posts</div><div><b>245</b>Followers</div><div><b>180</b>Following</div></div></div><div class="bio"><b>${esc(me.name)}</b><br>@${esc(me.username)}<br>${esc(me.bio||'Welcome to my Hyper profile.')}</div><div class="tabs"><button onclick="editOpen()">✏ Edit profile</button><button onclick="settingsOpen()">⚙ Settings</button></div><h3>Posts</h3><div class="grid">${mine.map(p=>p.image?`<div><img src="${p.image}"></div>`:`<div>H</div>`).join('')||'<div style="grid-column:1/-1;text-align:center;padding:30px">No posts yet</div>'}</div></section>`}
+function editOpen(){$('eName').value=me.name||'';$('eUser').value=me.username||'';$('eBio').value=me.bio||'';openM('edit')}
+async function profileSave(){let avatar=me.avatar,f=$('eAvatar').files[0];if(f){if(f.size>3*1024*1024)return toast('Profile image under 3MB');avatar=await new Promise(ok=>{let r=new FileReader();r.onload=()=>ok(r.result);r.readAsDataURL(f)})}try{let d=await api('/api/profile',{method:'PUT',body:JSON.stringify({name:$('eName').value,username:$('eUser').value,bio:$('eBio').value,avatar})});me=d.user;closeM('edit');profile();toast('Profile updated')}catch(e){toast(e.message)}}
+function settingsOpen(){$('privateSwitch').classList.toggle('on',!!me.privateProfile);$('notifySwitch').classList.toggle('on',me.notifications!==false);$('darkSwitch').classList.toggle('on',document.body.classList.contains('dark'));openM('settings')}
+async function togglePrivate(){let v=!me.privateProfile;try{let d=await api('/api/settings',{method:'PUT',body:JSON.stringify({privateProfile:v})});me=d.user;settingsOpen()}catch(e){toast(e.message)}}
+async function toggleNotify(){let v=me.notifications===false;try{let d=await api('/api/settings',{method:'PUT',body:JSON.stringify({notifications:v})});me=d.user;settingsOpen()}catch(e){toast(e.message)}}
+function toggleDark(){document.body.classList.toggle('dark');localStorage.setItem('hyperDark',document.body.classList.contains('dark'));settingsOpen()}
+async function logout(){await api('/api/logout',{method:'POST'});me=null;closeM('settings');home();toast('Logged out')}
+function searchOpen(){openM('search');searchRender()}
+function searchRender(){let q=$('searchInput').value.toLowerCase();let a=posts.filter(p=>(p.username+p.name+p.caption).toLowerCase().includes(q));$('searchResults').innerHTML=a.map(p=>`<div class="comment"><b>@${esc(p.username)}</b> ${esc(p.caption)}</div>`).join('')||'<div class="empty">No results</div>'}
+function activity(){$('app').innerHTML='<div class="empty"><h2>Activity</h2><p>Your likes, comments and saved posts appear here.</p></div>'}
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+if(localStorage.getItem('hyperDark')==='true')document.body.classList.add('dark');
+init();
 </script>
 </body></html>

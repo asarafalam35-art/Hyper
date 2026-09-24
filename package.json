@@ -1,7 +1,11 @@
 {
-  "name": "hyper-social-v3",
-  "version": "3.0.0",
+  "name": "hyper-social-v4",
+  "version": "4.0.0",
   "private": true,
   "scripts": { "start": "node server.js" },
-  "dependencies": { "express": "^4.21.2" }
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.7",
+    "express": "^4.21.2"
+  }
 }

@@ -1,0 +1,33 @@
+[
+  {
+    "id": "demo1",
+    "userId": "demo",
+    "userName": "hyper_user",
+    "avatar": "H",
+    "caption": "Welcome to Hyper! 🚀",
+    "image": "",
+    "likes": 3,
+    "likedBy": [],
+    "savedBy": [],
+    "comments": [
+      {
+        "id": "c1",
+        "userId": "demo",
+        "userName": "hyper_user",
+        "text": "Welcome to Hyper!"
+      }
+    ]
+  },
+  {
+    "id": "demo2",
+    "userId": "demo",
+    "userName": "creator",
+    "avatar": "C",
+    "caption": "Share your world.",
+    "image": "",
+    "likes": 8,
+    "likedBy": [],
+    "savedBy": [],
+    "comments": []
+  }
+]
