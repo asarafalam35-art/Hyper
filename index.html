@@ -1,0 +1,19 @@
+<!doctype html>
+<html><head><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hyper Instagram</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#fafafa;font-family:Arial;color:#111}
+header{position:sticky;top:0;background:#fff;border-bottom:1px solid #ddd;padding:14px 20px;display:flex;justify-content:space-between}
+.logo{font-size:25px;font-weight:800}.wrap{max-width:600px;margin:auto}.stories{display:flex;gap:16px;overflow:auto;padding:18px 12px;background:#fff}
+.story{min-width:64px;text-align:center;font-size:12px}.avatar{width:58px;height:58px;border-radius:50%;background:linear-gradient(135deg,#f90,#d26,#735);margin:auto;display:grid;place-items:center;color:#fff;font-weight:bold}
+.post{background:#fff;border:1px solid #ddd;margin:12px 0}.head{padding:12px;font-weight:bold}.photo{height:480px;background:linear-gradient(135deg,#542080,#151515);display:grid;place-items:center;color:#fff;font-size:70px}.actions{padding:10px;font-size:28px;cursor:pointer}.caption{padding:0 12px 16px}.nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #ddd;padding:12px;text-align:center;font-size:24px}
+</style></head>
+<body><header><div class="logo">HYPER</div><div>♡　✉</div></header>
+<main class="wrap"><section class="stories">
+<div class="story"><div class="avatar">+</div>Your story</div><div class="story"><div class="avatar">A</div>Alex</div>
+<div class="story"><div class="avatar">R</div>Rahul</div><div class="story"><div class="avatar">S</div>Sarah</div>
+</section>
+<article class="post"><div class="head">hyper_user</div><div class="photo">H</div><div class="actions" onclick="like(this)">♡</div><div class="caption"><b>hyper_user</b> Welcome to Hyper! 🚀</div></article>
+<article class="post"><div class="head">creator</div><div class="photo">📷</div><div class="actions" onclick="like(this)">♡</div><div class="caption"><b>creator</b> Share your world.</div></article>
+</main><div class="nav">⌂　⌕　＋　♡　◯</div>
+<script>function like(e){e.textContent=e.textContent==="♡"?"♥":"♡"}</script></body></html>
