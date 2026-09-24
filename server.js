@@ -1,158 +1,52 @@
+const express=require('express');
+const cookieParser=require('cookie-parser');
+const bcrypt=require('bcryptjs');
+const path=require('path');
+const crypto=require('crypto');
+const app=express();
+const PORT=process.env.PORT||10000;
 
-const express = require("express");
-const cookieParser = require("cookie-parser");
-const bcrypt = require("bcryptjs");
-const fs = require("fs");
-const path = require("path");
-const crypto = require("crypto");
+// Demo/runtime storage. For permanent production data, connect a database such as PostgreSQL/Supabase.
+let users=[];
+let posts=[];
+let messages=[];
+const sessions=new Map();
 
-const app = express();
-const PORT = process.env.PORT || 10000;
-const DB = path.join(__dirname, "data");
-if (!fs.existsSync(DB)) fs.mkdirSync(DB);
-
-function read(name, fallback) {
-  const f = path.join(DB, name);
-  if (!fs.existsSync(f)) { fs.writeFileSync(f, JSON.stringify(fallback, null, 2)); return fallback; }
-  try { return JSON.parse(fs.readFileSync(f, "utf8")); } catch { return fallback; }
+function seed(){
+  const demo=[['hyper_user','hyper@demo.local','Hyper User','H'],['alex','alex@demo.local','Alex','A'],['rahul','rahul@demo.local','Rahul','R'],['sarah','sarah@demo.local','Sarah','S']];
+  users=demo.map(([username,email,name,avatar])=>({id:crypto.randomUUID(),username,email,name,bio:'Welcome to my Hyper profile.',avatar,password:bcrypt.hashSync('Hyper123',10),privateProfile:false,notifications:true,followers:[],following:[]}));
+  posts=[{id:'demo1',userId:users[0].id,type:'post',caption:'Welcome to Hyper! 🚀',image:'',likes:0,likedBy:[],savedBy:[],comments:[]}];
 }
-function write(name, value) {
-  fs.writeFileSync(path.join(DB, name), JSON.stringify(value, null, 2));
-}
+seed();
 
-let users = read("users.json", []);
-let posts = read("posts.json", [
-  {id:"demo1", userId:"demo", userName:"hyper_user", avatar:"H", caption:"Welcome to Hyper! 🚀",
-   image:"", likes:3, likedBy:[], savedBy:[], comments:[{id:"c1",userId:"demo",userName:"hyper_user",text:"Welcome to Hyper!"}]},
-  {id:"demo2", userId:"demo", userName:"creator", avatar:"C", caption:"Share your world.", image:"",
-   likes:8, likedBy:[], savedBy:[], comments:[]}
-]);
-const sessions = new Map();
-
-app.use(express.json({limit:"12mb"}));
+app.use(express.json({limit:'12mb'}));
 app.use(cookieParser());
 app.use(express.static(__dirname));
-
-function safeUser(u) {
-  if (!u) return null;
-  return {id:u.id, username:u.username, email:u.email, name:u.name, bio:u.bio||"",
-          avatar:u.avatar||u.username[0].toUpperCase(), privateProfile:!!u.privateProfile,
-          notifications:u.notifications!==false};
-}
-function auth(req,res,next) {
-  const sid=req.cookies.hyper_sid;
-  const uid=sid && sessions.get(sid);
-  req.user=uid ? users.find(u=>u.id===uid) : null;
-  next();
-}
+function isAdmin(u){return !!u && String(u.email||'').toLowerCase()==='asarafalamt20@gmail.com'}
+function safeUser(u){if(!u)return null;return {id:u.id,username:u.username,email:u.email,name:u.name,bio:u.bio||'',avatar:u.avatar||u.username[0].toUpperCase(),privateProfile:!!u.privateProfile,notifications:u.notifications!==false,followers:u.followers||[],following:u.following||[],isAdmin:isAdmin(u)}}
+function auth(req,res,next){const sid=req.cookies.hyper_sid;const uid=sid&&sessions.get(sid);req.user=uid?users.find(u=>u.id===uid):null;next()}
 app.use(auth);
-
-app.get("/api/me",(req,res)=>res.json({user:safeUser(req.user)}));
-
-app.post("/api/register",(req,res)=>{
-  const {username,email,password,name}=req.body||{};
-  if(!username||!email||!password) return res.status(400).json({error:"Username, email and password are required."});
-  if(password.length<6) return res.status(400).json({error:"Password must be at least 6 characters."});
-  if(users.some(u=>u.username.toLowerCase()===username.toLowerCase())) return res.status(409).json({error:"Username already exists."});
-  if(users.some(u=>u.email.toLowerCase()===email.toLowerCase())) return res.status(409).json({error:"Email already exists."});
-  const u={id:crypto.randomUUID(),username:username.replace(/\s+/g,"").slice(0,30),email:email.toLowerCase(),
-    password:bcrypt.hashSync(password,10),name:name||username,bio:"",avatar:(name||username)[0].toUpperCase(),
-    privateProfile:false,notifications:true};
-  users.push(u); write("users.json",users);
-  const sid=crypto.randomUUID(); sessions.set(sid,u.id); res.cookie("hyper_sid",sid,{httpOnly:true,sameSite:"lax",secure:false,maxAge:1000*60*60*24*30});
-  res.json({user:safeUser(u)});
-});
-
-app.post("/api/login",(req,res)=>{
-  const {email,password}=req.body||{};
-  const u=users.find(x=>x.email.toLowerCase()===String(email||"").toLowerCase());
-  if(!u||!bcrypt.compareSync(password||"",u.password)) return res.status(401).json({error:"Invalid email or password."});
-  const sid=crypto.randomUUID(); sessions.set(sid,u.id); res.cookie("hyper_sid",sid,{httpOnly:true,sameSite:"lax",secure:false,maxAge:1000*60*60*24*30});
-  res.json({user:safeUser(u)});
-});
-
-app.post("/api/logout",(req,res)=>{
-  const sid=req.cookies.hyper_sid; if(sid)sessions.delete(sid); res.clearCookie("hyper_sid"); res.json({ok:true});
-});
-
-app.put("/api/profile",(req,res)=>{
-  if(!req.user)return res.status(401).json({error:"Login required."});
-  const {name,bio,avatar,username}=req.body||{};
-  if(username && users.some(u=>u.id!==req.user.id && u.username.toLowerCase()===username.toLowerCase()))
-    return res.status(409).json({error:"Username already exists."});
-  if(name!==undefined)req.user.name=String(name).slice(0,60);
-  if(bio!==undefined)req.user.bio=String(bio).slice(0,160);
-  if(avatar!==undefined)req.user.avatar=String(avatar).slice(0,2000000);
-  if(username!==undefined)req.user.username=String(username).replace(/\s+/g,"").slice(0,30);
-  write("users.json",users); res.json({user:safeUser(req.user)});
-});
-
-app.put("/api/settings",(req,res)=>{
-  if(!req.user)return res.status(401).json({error:"Login required."});
-  if(req.body.privateProfile!==undefined)req.user.privateProfile=!!req.body.privateProfile;
-  if(req.body.notifications!==undefined)req.user.notifications=!!req.body.notifications;
-  write("users.json",users); res.json({user:safeUser(req.user)});
-});
-
-app.get("/api/posts",(req,res)=>{
-  const out=posts.map(p=>{
-    const u=users.find(x=>x.id===p.userId);
-    return {...p, username:u?.username||p.userName, name:u?.name||p.userName,
-      avatar:u?.avatar||p.avatar, likedBy:p.likedBy||[], savedBy:p.savedBy||[]};
-  });
-  res.json({posts:out,currentUser:req.user?.id||null});
-});
-
-app.post("/api/posts",(req,res)=>{
-  if(!req.user)return res.status(401).json({error:"Login required."});
-  const {caption,image}=req.body||{};
-  const p={id:crypto.randomUUID(),userId:req.user.id,userName:req.user.username,avatar:req.user.avatar,
-    caption:String(caption||"").slice(0,1000),image:image||"",likes:0,likedBy:[],savedBy:[],comments:[]};
-  posts.unshift(p); write("posts.json",posts); res.json({post:p});
-});
-
-app.post("/api/posts/:id/like",(req,res)=>{
-  if(!req.user)return res.status(401).json({error:"Login required."});
-  const p=posts.find(x=>x.id===req.params.id); if(!p)return res.status(404).json({error:"Post not found."});
-  p.likedBy=p.likedBy||[]; const i=p.likedBy.indexOf(req.user.id);
-  if(i>=0){p.likedBy.splice(i,1);p.likes=Math.max(0,p.likes-1)}else{p.likedBy.push(req.user.id);p.likes++}
-  write("posts.json",posts); res.json({liked:i<0,likes:p.likes});
-});
-
-app.post("/api/posts/:id/save",(req,res)=>{
-  if(!req.user)return res.status(401).json({error:"Login required."});
-  const p=posts.find(x=>x.id===req.params.id); if(!p)return res.status(404).json({error:"Post not found."});
-  p.savedBy=p.savedBy||[]; const i=p.savedBy.indexOf(req.user.id);
-  if(i>=0)p.savedBy.splice(i,1);else p.savedBy.push(req.user.id);
-  write("posts.json",posts); res.json({saved:i<0});
-});
-
-app.put("/api/posts/:id/comments/:commentId",(req,res)=>{
-  if(!req.user)return res.status(401).json({error:"Login required."});
-  const p=posts.find(x=>x.id===req.params.id); if(!p)return res.status(404).json({error:"Post not found."});
-  const c=(p.comments||[]).find(x=>x.id===req.params.commentId);
-  if(!c)return res.status(404).json({error:"Comment not found."});
-  if(c.userId!==req.user.id)return res.status(403).json({error:"You can only edit your own comment."});
-  const text=String(req.body?.text||"").trim(); if(!text)return res.status(400).json({error:"Comment is empty."});
-  c.text=text.slice(0,500); c.edited=true; write("posts.json",posts); res.json({comment:c});
-});
-
-app.delete("/api/posts/:id/comments/:commentId",(req,res)=>{
-  if(!req.user)return res.status(401).json({error:"Login required."});
-  const p=posts.find(x=>x.id===req.params.id); if(!p)return res.status(404).json({error:"Post not found."});
-  const i=(p.comments||[]).findIndex(x=>x.id===req.params.commentId);
-  if(i<0)return res.status(404).json({error:"Comment not found."});
-  if(p.comments[i].userId!==req.user.id)return res.status(403).json({error:"You can only delete your own comment."});
-  p.comments.splice(i,1); write("posts.json",posts); res.json({ok:true});
-});
-
-app.post("/api/posts/:id/comments",(req,res)=>{
-  if(!req.user)return res.status(401).json({error:"Login required."});
-  const p=posts.find(x=>x.id===req.params.id); if(!p)return res.status(404).json({error:"Post not found."});
-  const text=String(req.body?.text||"").trim(); if(!text)return res.status(400).json({error:"Comment is empty."});
-  p.comments=p.comments||[]; const c={id:crypto.randomUUID(),userId:req.user.id,userName:req.user.username,text:text.slice(0,500)};
-  p.comments.push(c); write("posts.json",posts); res.json({comment:c});
-});
-
-app.get("*",(req,res)=>res.sendFile(path.join(__dirname,"index.html")));
-app.listen(PORT,"0.0.0.0",()=>console.log("Hyper Social V4 on "+PORT));
+app.get('/api/me',(req,res)=>res.json({user:safeUser(req.user)}));
+app.post('/api/register',(req,res)=>{const {username,email,password,name}=req.body||{};if(!username||!email||!password)return res.status(400).json({error:'Username, email and password are required.'});if(password.length<6)return res.status(400).json({error:'Password must be at least 6 characters.'});if(users.some(u=>u.username.toLowerCase()===String(username).toLowerCase()))return res.status(409).json({error:'Username already exists.'});if(users.some(u=>u.email.toLowerCase()===String(email).toLowerCase()))return res.status(409).json({error:'Email already exists.'});const u={id:crypto.randomUUID(),username:String(username).replace(/\s+/g,'').slice(0,30),email:String(email).toLowerCase(),password:bcrypt.hashSync(password,10),name:name||username,bio:'',avatar:(name||username)[0].toUpperCase(),privateProfile:false,notifications:true,followers:[],following:[]};users.push(u);loginSession(req,res,u);res.json({user:safeUser(u)})});
+function loginSession(req,res,u){const sid=crypto.randomUUID();sessions.set(sid,u.id);res.cookie('hyper_sid',sid,{httpOnly:true,sameSite:'lax',secure:false,maxAge:1000*60*60*24*30})}
+app.post('/api/login',(req,res)=>{const {email,password}=req.body||{};const u=users.find(x=>x.email.toLowerCase()===String(email||'').toLowerCase());if(!u||!bcrypt.compareSync(password||'',u.password))return res.status(401).json({error:'Invalid email or password.'});loginSession(req,res,u);res.json({user:safeUser(u)})});
+app.post('/api/logout',(req,res)=>{const sid=req.cookies.hyper_sid;if(sid)sessions.delete(sid);res.clearCookie('hyper_sid');res.json({ok:true})});
+app.put('/api/profile',(req,res)=>{if(!req.user)return res.status(401).json({error:'Login required.'});const {name,bio,avatar,username}=req.body||{};if(username&&users.some(u=>u.id!==req.user.id&&u.username.toLowerCase()===String(username).toLowerCase()))return res.status(409).json({error:'Username already exists.'});if(name!==undefined)req.user.name=String(name).slice(0,60);if(bio!==undefined)req.user.bio=String(bio).slice(0,160);if(avatar!==undefined)req.user.avatar=String(avatar).slice(0,2000000);if(username!==undefined)req.user.username=String(username).replace(/\s+/g,'').slice(0,30);res.json({user:safeUser(req.user)})});
+app.put('/api/settings',(req,res)=>{if(!req.user)return res.status(401).json({error:'Login required.'});if(req.body.privateProfile!==undefined)req.user.privateProfile=!!req.body.privateProfile;if(req.body.notifications!==undefined)req.user.notifications=!!req.body.notifications;res.json({user:safeUser(req.user)})});
+app.get('/api/users',(req,res)=>{let list=users;if(req.query.list==='followers'&&req.query.userId){const u=users.find(x=>x.id===req.query.userId);list=users.filter(x=>u?.followers?.includes(x.id))}else if(req.query.list==='following'&&req.query.userId){const u=users.find(x=>x.id===req.query.userId);list=users.filter(x=>u?.following?.includes(x.id))}res.json({users:list.map(safeUser)})});
+app.post('/api/users/:id/follow',(req,res)=>{if(!req.user)return res.status(401).json({error:'Login required.'});const target=users.find(u=>u.id===req.params.id);if(!target)return res.status(404).json({error:'User not found.'});if(target.id===req.user.id)return res.status(400).json({error:'You cannot follow yourself.'});req.user.following=req.user.following||[];target.followers=target.followers||[];const i=req.user.following.indexOf(target.id);if(i>=0){req.user.following.splice(i,1);target.followers=target.followers.filter(id=>id!==req.user.id);res.json({following:false,user:safeUser(req.user)})}else{req.user.following.push(target.id);target.followers.push(req.user.id);res.json({following:true,user:safeUser(req.user)})}});
+app.get('/api/posts',(req,res)=>{const out=posts.map(p=>{const u=users.find(x=>x.id===p.userId);const comments=(p.comments||[]).map(c=>{const cu=users.find(x=>x.id===c.userId);return {...c,userName:cu?.username||c.userName,avatar:cu?.avatar||c.avatar}});return {...p,username:u?.username||'user',name:u?.name||'User',avatar:u?.avatar||'U',likedBy:p.likedBy||[],savedBy:p.savedBy||[],comments}});res.json({posts:out,currentUser:req.user?.id||null})});
+app.post('/api/posts',(req,res)=>{if(!req.user)return res.status(401).json({error:'Login required.'});const {caption,image,type}=req.body||{};const safeType=type==='reel'?'reel':'post';const p={id:crypto.randomUUID(),userId:req.user.id,type:safeType,caption:String(caption||'').slice(0,1000),image:image||'',likes:0,likedBy:[],savedBy:[],comments:[]};posts.unshift(p);res.json({post:p})});
+app.post('/api/posts/:id/like',(req,res)=>{if(!req.user)return res.status(401).json({error:'Login required.'});const p=posts.find(x=>x.id===req.params.id);if(!p)return res.status(404).json({error:'Post not found.'});p.likedBy=p.likedBy||[];const i=p.likedBy.indexOf(req.user.id);if(i>=0){p.likedBy.splice(i,1);p.likes=Math.max(0,p.likes-1)}else{p.likedBy.push(req.user.id);p.likes++}res.json({liked:i<0,likes:p.likes})});
+app.post('/api/posts/:id/save',(req,res)=>{if(!req.user)return res.status(401).json({error:'Login required.'});const p=posts.find(x=>x.id===req.params.id);if(!p)return res.status(404).json({error:'Post not found.'});p.savedBy=p.savedBy||[];const i=p.savedBy.indexOf(req.user.id);if(i>=0)p.savedBy.splice(i,1);else p.savedBy.push(req.user.id);res.json({saved:i<0})});
+app.post('/api/posts/:id/comments',(req,res)=>{if(!req.user)return res.status(401).json({error:'Login required.'});const p=posts.find(x=>x.id===req.params.id);if(!p)return res.status(404).json({error:'Post not found.'});const text=String(req.body?.text||'').trim();if(!text)return res.status(400).json({error:'Comment is empty.'});p.comments=p.comments||[];const c={id:crypto.randomUUID(),userId:req.user.id,userName:req.user.username,text:text.slice(0,500)};p.comments.push(c);res.json({comment:c})});
+app.put('/api/posts/:id/comments/:commentId',(req,res)=>{if(!req.user)return res.status(401).json({error:'Login required.'});const p=posts.find(x=>x.id===req.params.id);const c=p?.comments?.find(x=>x.id===req.params.commentId);if(!p||!c)return res.status(404).json({error:'Comment not found.'});if(c.userId!==req.user.id)return res.status(403).json({error:'You can only edit your own comment.'});const text=String(req.body?.text||'').trim();if(!text)return res.status(400).json({error:'Comment is empty.'});c.text=text.slice(0,500);c.edited=true;res.json({comment:c})});
+app.delete('/api/posts/:id/comments/:commentId',(req,res)=>{if(!req.user)return res.status(401).json({error:'Login required.'});const p=posts.find(x=>x.id===req.params.id);const i=p?.comments?.findIndex(x=>x.id===req.params.commentId);if(!p||i<0)return res.status(404).json({error:'Comment not found.'});if(p.comments[i].userId!==req.user.id)return res.status(403).json({error:'You can only delete your own comment.'});p.comments.splice(i,1);res.json({ok:true})});
+app.get('/api/admin/overview',(req,res)=>{if(!isAdmin(req.user))return res.status(403).json({error:'Admin access required.'});res.json({users:users.length,posts:posts.length,reels:posts.filter(p=>p.type==='reel').length,messages:messages.length})});
+app.get('/api/admin/users',(req,res)=>{if(!isAdmin(req.user))return res.status(403).json({error:'Admin access required.'});res.json({users:users.map(safeUser)})});
+app.delete('/api/admin/posts/:id',(req,res)=>{if(!isAdmin(req.user))return res.status(403).json({error:'Admin access required.'});const i=posts.findIndex(p=>p.id===req.params.id);if(i<0)return res.status(404).json({error:'Post not found.'});posts.splice(i,1);res.json({ok:true})});
+app.delete('/api/admin/users/:id',(req,res)=>{if(!isAdmin(req.user))return res.status(403).json({error:'Admin access required.'});if(req.params.id===req.user.id)return res.status(400).json({error:'Admin cannot delete own account here.'});const i=users.findIndex(u=>u.id===req.params.id);if(i<0)return res.status(404).json({error:'User not found.'});const uid=users[i].id;users.splice(i,1);posts=posts.filter(p=>p.userId!==uid);messages=messages.filter(m=>m.from!==uid&&m.to!==uid);for(const u of users){u.followers=(u.followers||[]).filter(x=>x!==uid);u.following=(u.following||[]).filter(x=>x!==uid)}res.json({ok:true})});
+app.get('/api/messages',(req,res)=>{if(!req.user)return res.status(401).json({error:'Login required.'});const withId=String(req.query.with||'');res.json({messages:messages.filter(m=>(m.from===req.user.id&&m.to===withId)||(m.to===req.user.id&&m.from===withId))})});
+app.post('/api/messages',(req,res)=>{if(!req.user)return res.status(401).json({error:'Login required.'});const to=users.find(u=>u.id===req.body?.to);const text=String(req.body?.text||'').trim();if(!to||!text)return res.status(400).json({error:'Recipient and message are required.'});const m={id:crypto.randomUUID(),from:req.user.id,to:to.id,text:text.slice(0,1000),createdAt:Date.now()};messages.push(m);res.json({message:m})});
+app.get('*',(req,res)=>res.sendFile(path.join(__dirname,'index.html')));
+app.listen(PORT,'0.0.0.0',()=>console.log('Hyper Social on '+PORT));
