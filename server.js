@@ -12,6 +12,7 @@ let users=[];
 let posts=[];
 let messages=[];
 let calls=[];
+let stories=[];
 const sessions=new Map();
 
 function seed(){
@@ -41,6 +42,21 @@ app.put('/api/settings',(req,res)=>{if(!req.user)return res.status(401).json({er
 app.get('/api/users',(req,res)=>{let list=users;if(req.query.list==='followers'&&req.query.userId){const u=users.find(x=>x.id===req.query.userId);list=users.filter(x=>u?.followers?.includes(x.id))}else if(req.query.list==='following'&&req.query.userId){const u=users.find(x=>x.id===req.query.userId);list=users.filter(x=>u?.following?.includes(x.id))}else if(req.query.search!==undefined){const q=String(req.query.search||'').toLowerCase();list=users.filter(u=>(u.username+' '+u.name+' '+u.email).toLowerCase().includes(q))}res.json({users:list.map(safeUser)})});
 app.get('/api/users/:id',(req,res)=>{const u=users.find(x=>x.id===req.params.id);if(!u)return res.status(404).json({error:'User not found.'});res.json({user:safeUser(u)})});
 app.post('/api/users/:id/follow',(req,res)=>{if(!req.user)return res.status(401).json({error:'Login required.'});const target=users.find(u=>u.id===req.params.id);if(!target)return res.status(404).json({error:'User not found.'});if(target.id===req.user.id)return res.status(400).json({error:'You cannot follow yourself.'});req.user.following=req.user.following||[];target.followers=target.followers||[];const i=req.user.following.indexOf(target.id);if(i>=0){req.user.following.splice(i,1);target.followers=target.followers.filter(id=>id!==req.user.id);res.json({following:false,user:safeUser(req.user)})}else{req.user.following.push(target.id);target.followers.push(req.user.id);res.json({following:true,user:safeUser(req.user)})}});
+app.get('/api/stories',(req,res)=>{
+  const now=Date.now(); stories=stories.filter(s=>s.expiresAt>now);
+  const out=stories.map(s=>{const u=users.find(x=>x.id===s.userId);return {...s,user:safeUser(u)}});
+  res.json({stories:out});
+});
+app.post('/api/stories',(req,res)=>{
+  if(!req.user)return res.status(401).json({error:'Login required.'});
+  const {image,postId}=req.body||{};
+  if(!image&&!postId)return res.status(400).json({error:'Story media or post/reel is required.'});
+  let post=null; if(postId){post=posts.find(p=>p.id===postId);if(!post)return res.status(404).json({error:'Post/Reel not found.'});}
+  const st={id:crypto.randomUUID(),userId:req.user.id,image:image||'',postId:post?.id||null,postType:post?.type||null,caption:String(req.body?.caption||'').slice(0,300),createdAt:Date.now(),expiresAt:Date.now()+24*60*60*1000};
+  stories.unshift(st); res.json({story:{...st,user:safeUser(req.user)}});
+});
+app.delete('/api/stories/:id',(req,res)=>{if(!req.user)return res.status(401).json({error:'Login required.'});const i=stories.findIndex(s=>s.id===req.params.id);if(i<0)return res.status(404).json({error:'Story not found.'});if(stories[i].userId!==req.user.id&&!isAdmin(req.user))return res.status(403).json({error:'Not allowed.'});stories.splice(i,1);res.json({ok:true})});
+
 app.get('/api/posts',(req,res)=>{const out=posts.map(p=>{const u=users.find(x=>x.id===p.userId);const comments=(p.comments||[]).map(c=>{const cu=users.find(x=>x.id===c.userId);return {...c,userName:cu?.username||c.userName,avatar:cu?.avatar||c.avatar}});return {...p,username:u?.username||'user',name:u?.name||'User',avatar:u?.avatar||'U',likedBy:p.likedBy||[],savedBy:p.savedBy||[],comments}});res.json({posts:out,currentUser:req.user?.id||null})});
 app.post('/api/posts',(req,res)=>{if(!req.user)return res.status(401).json({error:'Login required.'});const {caption,image,type}=req.body||{};const safeType=type==='reel'?'reel':'post';const p={id:crypto.randomUUID(),userId:req.user.id,type:safeType,caption:String(caption||'').slice(0,1000),image:image||'',likes:0,likedBy:[],savedBy:[],comments:[]};posts.unshift(p);res.json({post:p})});
 app.post('/api/posts/:id/like',(req,res)=>{if(!req.user)return res.status(401).json({error:'Login required.'});const p=posts.find(x=>x.id===req.params.id);if(!p)return res.status(404).json({error:'Post not found.'});p.likedBy=p.likedBy||[];const i=p.likedBy.indexOf(req.user.id);if(i>=0){p.likedBy.splice(i,1);p.likes=Math.max(0,p.likes-1)}else{p.likedBy.push(req.user.id);p.likes++}res.json({liked:i<0,likes:p.likes})});
