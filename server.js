@@ -3,16 +3,63 @@ const cookieParser=require('cookie-parser');
 const bcrypt=require('bcryptjs');
 const path=require('path');
 const crypto=require('crypto');
-const {createClient}=require('@supabase/supabase-js');
+const fs=require('fs');
+const DATA_FILE=path.join(__dirname,'hyper_data.json');
 
+class LocalQuery{
+  constructor(db,table,op='select'){this.db=db;this.table=table;this.op=op;this.rows=null;this.filters=[];this.orderSpec=null;this.limitN=null;this.selectCols='*';this.updatePatch=null;this.insertRows=null;this.countMode=false;this.head=false}
+  _base(){this.rows=this.db.tables[this.table]||[];return this}
+  select(cols='*',opts={}){this.selectCols=cols;this.countMode=opts.count==='exact';this.head=opts.head===true;return this._base()}
+  insert(payload){this.op='insert';this.insertRows=Array.isArray(payload)?payload:[payload];return this}
+  update(patch){this.op='update';this.updatePatch=patch;return this._base()}
+  delete(){this.op='delete';return this._base()}
+  eq(field,value){this.filters.push(r=>String(r[field]??'')===String(value??''));return this}
+  neq(field,value){this.filters.push(r=>String(r[field]??'')!==String(value??''));return this}
+  ilike(field,value){let v=String(value??'').replace(/^%|%$/g,'').toLowerCase();this.filters.push(r=>String(r[field]??'').toLowerCase().includes(v));return this}
+  in(field,values){let set=new Set((values||[]).map(String));this.filters.push(r=>set.has(String(r[field])));return this}
+  lt(field,value){this.filters.push(r=>new Date(r[field]).getTime()<new Date(value).getTime());return this}
+  is(field,value){this.filters.push(r=>value===null ? r[field]===null || r[field]===undefined : r[field]===value);return this}
+  or(expr){
+    const parts=String(expr||'').split(/,(?=(?:and|or)\()/);
+    const tests=[];
+    for(const part of parts){
+      const m=part.match(/^and\((.+)\)$/);
+      const body=m?m[1]:part;
+      const conds=body.split(',').map(x=>x.trim()).filter(Boolean).map(x=>{const z=x.match(/^([\w]+)\.(eq|ilike)\.(.*)$/);if(!z)return ()=>false;let val=z[3];return r=>z[2]==='eq'?String(r[z[1]]??'')===String(val):String(r[z[1]]??'').toLowerCase().includes(String(val).replace(/^%|%$/g,'').toLowerCase())});
+      tests.push(r=>conds.every(fn=>fn(r)));
+    }
+    this.filters.push(r=>tests.some(fn=>fn(r)));return this
+  }
+  order(field,{ascending=true}={}){this.orderSpec={field,ascending};return this}
+  limit(n){this.limitN=Number(n);return this}
+  async _exec(){
+    if(this.op==='insert'){
+      const out=this.insertRows.map(x=>({...x}));
+      this.db.tables[this.table].push(...out);this.db.save();return {data:out,error:null};
+    }
+    let rows=[...(this.db.tables[this.table]||[])];
+    for(const f of this.filters) rows=rows.filter(f);
+    if(this.orderSpec){const {field,ascending}=this.orderSpec;rows.sort((a,b)=>{const av=a[field],bv=b[field];if(av===bv)return 0;return (av>bv?1:-1)*(ascending?1:-1)})}
+    if(this.limitN!=null) rows=rows.slice(0,this.limitN);
+    if(this.op==='delete'){const all=this.db.tables[this.table]||[];const keep=all.filter(r=>!rows.includes(r));this.db.tables[this.table]=keep;this.db.save();return {data:null,error:null};}
+    if(this.op==='update'){for(const r of rows)Object.assign(r,this.updatePatch);this.db.save();return {data:rows.map(r=>({...r})),error:null};}
+    const data=rows.map(r=>{if(this.selectCols==='*')return {...r};const cols=String(this.selectCols).split(',').map(x=>x.trim());const o={};for(const c of cols)o[c]=r[c];return o});
+    if(this.countMode)return {data:this.head?null:data,count:data.length,error:null};
+    return {data,error:null};
+  }
+  async single(){const r=await this._exec();if(!r.data||!r.data.length)return {data:null,error:{message:'No rows'}};return {data:r.data[0],error:null}}
+  async maybeSingle(){const r=await this._exec();return {data:r.data&&r.data.length?r.data[0]:null,error:null}}
+  then(resolve,reject){return this._exec().then(resolve,reject)}
+}
+class LocalDB{
+  constructor(){this.tables={users:[],posts:[],stories:[],messages:[],calls:[],sessions:[]};this.load()}
+  load(){try{if(fs.existsSync(DATA_FILE)){const x=JSON.parse(fs.readFileSync(DATA_FILE,'utf8'));for(const k of Object.keys(this.tables))this.tables[k]=Array.isArray(x[k])?x[k]:[]}}catch(e){console.error('Could not read local data:',e.message)}}
+  save(){try{fs.writeFileSync(DATA_FILE,JSON.stringify(this.tables))}catch(e){console.error('Could not save local data:',e.message)}}
+  from(table){if(!this.tables[table])this.tables[table]=[];return new LocalQuery(this,table)}
+}
 const app=express();
 const PORT=process.env.PORT||10000;
-const SUPABASE_URL=process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY=process.env.SUPABASE_SERVICE_ROLE_KEY;
-if(!SUPABASE_URL||!SUPABASE_SERVICE_ROLE_KEY){
-  console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY. Add both to Render Environment Variables.');
-}
-const db=SUPABASE_URL&&SUPABASE_SERVICE_ROLE_KEY?createClient(SUPABASE_URL,SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false}}):null;
+const db=new LocalDB();
 app.set('trust proxy',1);
 app.use(express.json({limit:'12mb'}));
 app.use(cookieParser());
@@ -20,7 +67,7 @@ app.use(express.static(__dirname));
 
 const adminEmail=String(process.env.ADMIN_EMAIL||'asarafalamt20@gmail.com').trim().toLowerCase();
 const adminPassword=String(process.env.ADMIN_PASSWORD||'A2aryann');
-function requireDb(res){if(!db){res.status(500).json({error:'Database is not configured. Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in Render.'});return false}return true}
+function requireDb(res){return true}
 function id(){return crypto.randomUUID()}
 function isAdmin(u){return !!u&&String(u.email||'').toLowerCase()===adminEmail}
 function safeUser(u){if(!u)return null;return {id:u.id,username:u.username,email:u.email,name:u.name,bio:u.bio||'',avatar:u.avatar||String(u.username||'?')[0].toUpperCase(),privateProfile:!!u.private_profile,notifications:u.notifications!==false,followers:Array.isArray(u.followers)?u.followers:[],following:Array.isArray(u.following)?u.following:[],isAdmin:isAdmin(u)}}
@@ -85,7 +132,7 @@ app.get('/api/admin/users',async(req,res)=>{if(!isAdmin(req.user))return res.sta
 app.delete('/api/admin/posts/:id',async(req,res)=>{if(!isAdmin(req.user))return res.status(403).json({error:'Admin access required.'});await db.from('posts').delete().eq('id',req.params.id);await db.from('stories').delete().eq('post_id',req.params.id);res.json({ok:true})});
 app.delete('/api/admin/users/:id',async(req,res)=>{try{if(!isAdmin(req.user))return res.status(403).json({error:'Admin access required.'});if(req.params.id===req.user.id)return res.status(400).json({error:'Admin cannot delete own account here.'});await db.from('users').delete().eq('id',req.params.id);res.json({ok:true})}catch(e){res.status(500).json({error:'Admin user delete failed.'})}});
 
-app.get('/api/health',(req,res)=>res.json({ok:!!db,database:!!db?'supabase':'missing'}));
+app.get('/api/health',(req,res)=>res.json({ok:true,database:'local'}));
 app.get('*',(req,res)=>res.sendFile(path.join(__dirname,'index.html')));
 
-(async()=>{if(db){try{await ensureAdmin();console.log('Supabase persistence enabled. Admin:',adminEmail)}catch(e){console.error('Supabase startup error:',e.message)}}app.listen(PORT,'0.0.0.0',()=>console.log('Hyper Social v7 on '+PORT))})();
+(async()=>{try{await ensureAdmin();console.log('Local persistent store enabled. Admin:',adminEmail)}catch(e){console.error('Startup error:',e.message)}app.listen(PORT,'0.0.0.0',()=>console.log('Hyper Social on '+PORT))})();
