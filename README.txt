@@ -1,15 +1,24 @@
-HYPER v10
+HYPER v16 - Multiple Accounts + Mentions
 
-This build is designed to work without Supabase environment variables.
-It keeps app data in hyper_data.json (created automatically beside server.js).
+Features:
+- Create more than one account on the same device.
+- Add account / Switch account buttons on profile.
+- Saved account emails are stored locally; password is never stored.
+- Login with the selected account's password.
+- Mention users in posts, reels and stories.
+- Search users by name/username and add mention chips before publishing.
+- Mentions are stored in Supabase/local data.
+- Existing v15 share/story/music/admin features retained.
 
 Render:
-Build Command: npm install
-Start Command: npm start
+Build: npm install
+Start: npm start
 
-Admin:
-Email: asarafalamt20@gmail.com
-Password: A2aryann
-
-IMPORTANT:
-The local JSON store prevents data loss during normal process restarts, but Render's free filesystem is not guaranteed across a new deploy/rebuild. For permanent cross-deploy data, a real database/storage service is still required.
+Supabase:
+Run supabase_schema.sql. It includes safe ALTER statements for existing posts/stories tables.
+Environment variables:
+SUPABASE_URL
+SUPABASE_SERVICE_ROLE_KEY
+ADMIN_EMAIL=asarafalamt20@gmail.com
+ADMIN_PASSWORD=A2aryann
+AUTH_SECRET=<fixed random secret>

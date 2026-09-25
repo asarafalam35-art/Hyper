@@ -1,81 +1,76 @@
-create extension if not exists pgcrypto;
 
-create table if not exists public.users (
-  id uuid primary key,
-  username text not null unique,
-  email text not null unique,
-  name text not null,
-  bio text not null default '',
-  avatar text not null default '',
-  password_hash text not null,
-  private_profile boolean not null default false,
-  notifications boolean not null default true,
-  followers jsonb not null default '[]'::jsonb,
-  following jsonb not null default '[]'::jsonb,
-  created_at timestamptz not null default now()
+create table if not exists users (
+ id text primary key,
+ username text unique not null,
+ email text unique not null,
+ name text not null,
+ bio text default '',
+ avatar text default 'U',
+ password_hash text not null,
+ private_profile boolean default false,
+ notifications boolean default true,
+ followers jsonb default '[]'::jsonb,
+ following jsonb default '[]'::jsonb
 );
-
-create table if not exists public.sessions (
-  id uuid primary key,
-  user_id uuid not null references public.users(id) on delete cascade,
-  expires_at timestamptz not null,
-  created_at timestamptz not null default now()
+create table if not exists posts (
+ id text primary key,
+ user_id text not null references users(id) on delete cascade,
+ type text not null,
+ caption text default '',
+ image text default '',
+ song_url text default '',
+ song_title text default '',
+ mentions jsonb not null default '[]'::jsonb,
+ likes integer default 0,
+ liked_by jsonb default '[]'::jsonb,
+ saved_by jsonb default '[]'::jsonb,
+ comments jsonb default '[]'::jsonb,
+ created_at timestamptz default now()
 );
-create index if not exists sessions_user_id_idx on public.sessions(user_id);
-create index if not exists sessions_expires_idx on public.sessions(expires_at);
-
-create table if not exists public.posts (
-  id uuid primary key,
-  user_id uuid not null references public.users(id) on delete cascade,
-  type text not null default 'post' check (type in ('post','reel')),
-  caption text not null default '',
-  image text not null default '',
-  song_url text not null default '',
-  song_title text not null default '',
-  likes integer not null default 0,
-  liked_by jsonb not null default '[]'::jsonb,
-  saved_by jsonb not null default '[]'::jsonb,
-  comments jsonb not null default '[]'::jsonb,
-  created_at timestamptz not null default now()
+create table if not exists stories (
+ id text primary key,
+ user_id text not null references users(id) on delete cascade,
+ image text default '',
+ post_id text,
+ post_type text,
+ caption text default '',
+ song_url text default '',
+ song_title text default '',
+ mentions jsonb not null default '[]'::jsonb,
+ created_at timestamptz default now(),
+ expires_at timestamptz not null
 );
-create index if not exists posts_user_id_idx on public.posts(user_id);
-create index if not exists posts_created_at_idx on public.posts(created_at desc);
-
-create table if not exists public.stories (
-  id uuid primary key,
-  user_id uuid not null references public.users(id) on delete cascade,
-  image text not null default '',
-  post_id uuid references public.posts(id) on delete cascade,
-  post_type text,
-  caption text not null default '',
-  song_url text not null default '',
-  song_title text not null default '',
-  created_at timestamptz not null default now(),
-  expires_at timestamptz not null
+create table if not exists messages (
+ id text primary key,
+ from_id text not null references users(id) on delete cascade,
+ to_id text not null references users(id) on delete cascade,
+ text text default '',
+ shared_post_id text,
+ shared_story_id text,
+ created_at timestamptz default now()
 );
-create index if not exists stories_expires_idx on public.stories(expires_at);
-create index if not exists stories_user_id_idx on public.stories(user_id);
-
-create table if not exists public.messages (
-  id uuid primary key,
-  from_id uuid not null references public.users(id) on delete cascade,
-  to_id uuid not null references public.users(id) on delete cascade,
-  text text not null default '',
-  shared_post_id uuid references public.posts(id) on delete set null,
-  created_at timestamptz not null default now()
+create table if not exists calls (
+ id text primary key,
+ from_id text not null references users(id) on delete cascade,
+ to_id text not null references users(id) on delete cascade,
+ type text,
+ offer jsonb,
+ answer jsonb,
+ status text,
+ created_at timestamptz default now()
 );
-create index if not exists messages_from_idx on public.messages(from_id,created_at desc);
-create index if not exists messages_to_idx on public.messages(to_id,created_at desc);
-
-create table if not exists public.calls (
-  id uuid primary key,
-  from_id uuid not null references public.users(id) on delete cascade,
-  to_id uuid not null references public.users(id) on delete cascade,
-  type text not null default 'audio',
-  offer jsonb,
-  answer jsonb,
-  created_at timestamptz not null default now()
+create table if not exists sessions (
+ id text primary key,
+ user_id text not null references users(id) on delete cascade,
+ expires_at timestamptz not null
 );
-create index if not exists calls_to_idx on public.calls(to_id,created_at desc);
+create index if not exists posts_user_id_idx on posts(user_id);
+create index if not exists stories_user_id_idx on stories(user_id);
+create index if not exists messages_from_idx on messages(from_id);
+create index if not exists messages_to_idx on messages(to_id);
+create index if not exists sessions_user_id_idx on sessions(user_id);
 
--- The server uses the Supabase service-role key, so these tables do not need client-side RLS for this app version.
+
+-- v16 mention migration for existing projects
+alter table if exists public.posts add column if not exists mentions jsonb not null default '[]'::jsonb;
+alter table if exists public.stories add column if not exists mentions jsonb not null default '[]'::jsonb;
