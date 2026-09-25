@@ -86,6 +86,6 @@ app.delete('/api/admin/posts/:id',async(req,res)=>{if(!isAdmin(req.user))return 
 app.delete('/api/admin/users/:id',async(req,res)=>{try{if(!isAdmin(req.user))return res.status(403).json({error:'Admin access required.'});if(req.params.id===req.user.id)return res.status(400).json({error:'Admin cannot delete own account here.'});await db.from('users').delete().eq('id',req.params.id);res.json({ok:true})}catch(e){res.status(500).json({error:'Admin user delete failed.'})}});
 
 app.get('/api/health',(req,res)=>res.json({ok:!!db,database:!!db?'supabase':'missing'}));
-app.use((req,res)=>res.sendFile(path.join(__dirname,'index.html')));
+app.get('*',(req,res)=>res.sendFile(path.join(__dirname,'index.html')));
 
 (async()=>{if(db){try{await ensureAdmin();console.log('Supabase persistence enabled. Admin:',adminEmail)}catch(e){console.error('Supabase startup error:',e.message)}}app.listen(PORT,'0.0.0.0',()=>console.log('Hyper Social v7 on '+PORT))})();

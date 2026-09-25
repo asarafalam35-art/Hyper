@@ -1,9 +1,8 @@
 {
-  "name":"hyper-social-v8",
-  "version":"8.0.0",
+  "name":"hyper-social-v7",
+  "version":"7.0.0",
   "private":true,
   "scripts":{"start":"node server.js"},
-  "engines":{"node":">=18"},
   "dependencies":{
     "@supabase/supabase-js":"^2.57.4",
     "bcryptjs":"^3.0.2",
