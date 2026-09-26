@@ -5,7 +5,8 @@ const path=require('path');
 const crypto=require('crypto');
 const fs=require('fs');
 let createClient=null; try{({createClient}=require('@supabase/supabase-js'))}catch{}
-const DATA_FILE=path.join(__dirname,'hyper_data.json');
+const DEFAULT_DATA_FILE=(process.env.RENDER==='true' ? '/var/data/hyper_data.json' : path.join(__dirname,'hyper_data.json'));
+const DATA_FILE=String(process.env.HYPER_DATA_FILE||DEFAULT_DATA_FILE).trim();
 
 class LocalQuery{
   constructor(db,table,op='select'){this.db=db;this.table=table;this.op=op;this.rows=null;this.filters=[];this.orderSpec=null;this.limitN=null;this.selectCols='*';this.updatePatch=null;this.insertRows=null;this.countMode=false;this.head=false}
@@ -119,13 +120,13 @@ async function loginSession(res,u){
   const payload=b64url(JSON.stringify({id:u.id,exp}));
   const token=signAuth(payload);
   const switchToken=signAuth(b64url(JSON.stringify({id:u.id,exp,type:'switch'})));
-  res.cookie('hyper_auth',token,{httpOnly:true,sameSite:'lax',secure:true,path:'/',maxAge:1000*60*60*24*30});
+  res.cookie('hyper_auth',token,{httpOnly:true,sameSite:'lax',secure:process.env.RENDER==='true',path:'/',maxAge:1000*60*60*24*30});
   // Keep the old session too for backward compatibility with existing logins.
-  try{const sid=id();await db.from('sessions').insert({id:sid,user_id:u.id,expires_at:new Date(exp).toISOString()});res.cookie('hyper_sid',sid,{httpOnly:true,sameSite:'lax',secure:true,path:'/',maxAge:1000*60*60*24*30})}catch{}
+  try{const sid=id();await db.from('sessions').insert({id:sid,user_id:u.id,expires_at:new Date(exp).toISOString()});res.cookie('hyper_sid',sid,{httpOnly:true,sameSite:'lax',secure:process.env.RENDER==='true',path:'/',maxAge:1000*60*60*24*30})}catch{}
   return switchToken;
 }
 app.post('/api/login',async(req,res)=>{try{if(!requireDb(res))return;const email=String(req.body?.email||'').trim().toLowerCase();const password=String(req.body?.password||'');if(!email||!password)return res.status(400).json({error:'Email and password are required.'});let u=await getUserByEmail(email);if(email===adminEmail&&password===adminPassword){if(!u){await ensureAdmin();u=await getUserByEmail(email)}if(u){const switchToken=await loginSession(res,u);return res.json({user:safeUser(u),switchToken})}}if(!u||!(await bcrypt.compare(password,u.password_hash||'')))return res.status(401).json({error:'Invalid email or password.'});const switchToken=await loginSession(res,u);res.json({user:safeUser(u),switchToken})}catch(e){console.error(e);res.status(500).json({error:'Login failed.'})}});
-app.post('/api/logout',async(req,res)=>{try{if(db&&req.cookies.hyper_sid)await db.from('sessions').delete().eq('id',req.cookies.hyper_sid);res.clearCookie('hyper_sid');res.json({ok:true})}catch(e){res.status(500).json({error:'Logout failed.'})}});
+app.post('/api/logout',async(req,res)=>{try{if(db&&req.cookies.hyper_sid)await db.from('sessions').delete().eq('id',req.cookies.hyper_sid);res.clearCookie('hyper_sid',{path:'/'});res.clearCookie('hyper_auth',{path:'/'});res.json({ok:true})}catch(e){res.status(500).json({error:'Logout failed.'})}});
 app.post('/api/account/switch',async(req,res)=>{try{const t=String(req.body?.switchToken||'');const v=verifyAuth(t);if(!v||v.type!=='switch')return res.status(401).json({error:'Saved account session expired. Please login once again.'});const u=await getUserById(v.id);if(!u)return res.status(401).json({error:'Account not found.'});const switchToken=await loginSession(res,u);res.json({user:safeUser(u),switchToken})}catch(e){console.error(e);res.status(500).json({error:'Account switch failed.'})}});
 
 app.put('/api/profile',async(req,res)=>{try{if(!req.user)return res.status(401).json({error:'Login required.'});const {name,bio,avatar,username}=req.body||{};if(username){const q=await db.from('users').select('id').ilike('username',String(username)).neq('id',req.user.id).maybeSingle();if(q.data)return res.status(409).json({error:'Username already exists.'})}const patch={};if(name!==undefined)patch.name=String(name).slice(0,60);if(bio!==undefined)patch.bio=String(bio).slice(0,160);if(avatar!==undefined)patch.avatar=String(avatar).slice(0,2500000);if(username!==undefined)patch.username=String(username).replace(/\s+/g,'').slice(0,30);const {data,error}=await db.from('users').update(patch).eq('id',req.user.id).select('*').single();if(error)throw error;res.json({user:safeUser(data)})}catch(e){console.error(e);res.status(500).json({error:'Profile update failed.'})}});
@@ -206,7 +207,7 @@ async function fetchDailymotionVideos(queryOrChannel,limit=8,mode='search',categ
     const seen=new Set();
     return lists.flat().map(x=>{
       const created=Number(x.created_time||x.uploaded_time||0);
-      return {id:x.id,title:x.title||'Video',duration:x.duration||0,thumbnail:x.vertical_thumbnail_url||x.thumbnail_url||'',url:x.url||'',embedUrl:x.embed_url||'',channel:x.channel||queryOrChannel,language:x.language||'',createdTime:created,ageLabel:videoAgeLabel(created),category};
+      return {id:x.id,title:x.title||'Video',duration:x.duration||0,thumbnail:x.vertical_thumbnail_url||x.thumbnail_url||(x.id?`https://www.dailymotion.com/thumbnail/video/${x.id}`:''),url:x.url||'',embedUrl:x.embed_url||'',channel:x.channel||queryOrChannel,channelName:x.channel_name||x.channel_title||x.channel||queryOrChannel,language:x.language||'',createdTime:created,ageLabel:videoAgeLabel(created),category};
     }).filter(x=>x.id&&x.embedUrl&&!seen.has(x.id)&&seen.add(x.id)).sort((a,b)=>b.createdTime-a.createdTime).slice(0,limit);
   }catch(e){return []}
 }
@@ -325,6 +326,35 @@ app.get('/api/admin/overview',async(req,res)=>{try{if(!isAdmin(req.user))return 
 app.get('/api/admin/users',async(req,res)=>{if(!isAdmin(req.user))return res.status(403).json({error:'Admin access required.'});const {data}=await db.from('users').select('*').order('created_at',{ascending:false});res.json({users:(data||[]).map(safeUser)})});
 app.delete('/api/admin/posts/:id',async(req,res)=>{if(!isAdmin(req.user))return res.status(403).json({error:'Admin access required.'});await db.from('posts').delete().eq('id',req.params.id);await db.from('stories').delete().eq('post_id',req.params.id);res.json({ok:true})});
 app.delete('/api/admin/users/:id',async(req,res)=>{try{if(!isAdmin(req.user))return res.status(403).json({error:'Admin access required.'});if(req.params.id===req.user.id)return res.status(400).json({error:'Admin cannot delete own account here.'});await db.from('users').delete().eq('id',req.params.id);res.json({ok:true})}catch(e){res.status(500).json({error:'Admin user delete failed.'})}});
+
+app.get('/api/download/dailymotion/:id',async(req,res)=>{
+  const vid=String(req.params.id||'').trim();
+  if(!/^[A-Za-z0-9]+$/.test(vid)) return res.status(400).json({error:'Invalid video id.'});
+  const clientId=String(process.env.DM_CLIENT_ID||'').trim();
+  const clientSecret=String(process.env.DM_CLIENT_SECRET||'').trim();
+  if(!clientId||!clientSecret) return res.status(503).json({error:'Direct external download is not configured. Add DM_CLIENT_ID and DM_CLIENT_SECRET for authorized Dailymotion downloads.'});
+  try{
+    const tok=await fetch('https://oauth2.dailymotion.com/v2/token',{method:'POST',headers:{'accept':'application/json','content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({grant_type:'client_credentials',scope:'video.read',client_id:clientId,client_secret:clientSecret})});
+    if(!tok.ok) throw new Error('Dailymotion authentication failed');
+    const tj=await tok.json(); const access=tj.access_token; if(!access) throw new Error('No access token');
+    const dr=await fetch(`https://api.dailymotion.com/v2/videos/${encodeURIComponent(vid)}/downloads`,{method:'POST',headers:{'accept':'application/json','authorization':`Bearer ${access}`,'content-type':'application/json'}});
+    if(!dr.ok) throw new Error('Download URL unavailable for this video');
+    const dj=await dr.json();
+    const downloads=Array.isArray(dj.downloads)?dj.downloads:[];
+    const pick=downloads.find(x=>x.type==='muxed')||downloads.find(x=>x.type==='video')||downloads[0];
+    if(!pick?.download_url) return res.status(404).json({error:'No downloadable video rendition is available for this video.'});
+    const file=await fetch(pick.download_url);
+    if(!file.ok||!file.body) throw new Error('Could not fetch the authorized video file');
+    const safeName=(`hyper-${vid}.mp4`).replace(/[^A-Za-z0-9._-]/g,'_');
+    res.setHeader('Content-Type',file.headers.get('content-type')||'video/mp4');
+    res.setHeader('Content-Disposition',`attachment; filename="${safeName}"`);
+    if(file.headers.get('content-length')) res.setHeader('Content-Length',file.headers.get('content-length'));
+    const reader=file.body.getReader();
+    res.on('close',()=>{try{reader.cancel()}catch{}});
+    while(true){const {done,value}=await reader.read();if(done)break;if(!res.write(Buffer.from(value)))await new Promise(r=>res.once('drain',r));}
+    res.end();
+  }catch(e){console.error('Dailymotion download:',e.message);if(!res.headersSent)res.status(502).json({error:'Direct download could not be started in Hyper.'});else res.end();}
+});
 
 app.get('/api/health',(req,res)=>res.json({ok:true,database:'local'}));
 app.get('*',(req,res)=>res.sendFile(path.join(__dirname,'index.html')));
