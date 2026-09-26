@@ -16,6 +16,7 @@ create table if not exists posts (
  id text primary key,
  user_id text not null references users(id) on delete cascade,
  type text not null,
+ category text default 'other',
  caption text default '',
  image text default '',
  song_url text default '',
@@ -30,6 +31,7 @@ create table if not exists posts (
 create table if not exists stories (
  id text primary key,
  user_id text not null references users(id) on delete cascade,
+ category text default 'story',
  image text default '',
  post_id text,
  post_type text,
@@ -98,3 +100,7 @@ create table if not exists notifications (
  read_at timestamptz
 );
 create index if not exists notifications_user_idx on notifications(user_id,created_at desc);
+
+-- If you already have the Hyper database, run these once in Supabase SQL Editor:
+-- alter table posts add column if not exists category text default 'other';
+-- alter table stories add column if not exists category text default 'story';
