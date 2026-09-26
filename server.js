@@ -56,7 +56,7 @@ class LocalQuery{
 class LocalDB{
   constructor(){this.tables={users:[],posts:[],stories:[],story_likes:[],messages:[],calls:[],sessions:[]};this.load()}
   load(){try{if(fs.existsSync(DATA_FILE)){const x=JSON.parse(fs.readFileSync(DATA_FILE,'utf8'));for(const k of Object.keys(this.tables))this.tables[k]=Array.isArray(x[k])?x[k]:[]}}catch(e){console.error('Could not read local data:',e.message)}}
-  save(){try{fs.writeFileSync(DATA_FILE,JSON.stringify(this.tables))}catch(e){console.error('Could not save local data:',e.message)}}
+  save(){try{fs.mkdirSync(path.dirname(DATA_FILE),{recursive:true});fs.writeFileSync(DATA_FILE,JSON.stringify(this.tables))}catch(e){console.error('Could not save local data:',e.message)}}
   from(table){if(!this.tables[table])this.tables[table]=[];return new LocalQuery(this,table)}
 }
 const app=express();
@@ -89,7 +89,7 @@ async function enrichPost(p){
   const ids=[...new Set(comments.map(c=>c.userId).filter(Boolean))];
   let users=[];if(ids.length){const r=await db.from('users').select('id,username,avatar').in('id',ids);if(!r.error)users=r.data||[]}
   const um=new Map(users.map(x=>[x.id,x]));
-  const mentionIds=Array.isArray(p.mentions)?p.mentions:[]; let mentionUsers=[]; if(mentionIds.length){const mr=await db.from('users').select('*').in('id',mentionIds); mentionUsers=(mr.data||[]).map(x=>safeUser(x))} return {id:p.id,userId:p.user_id,type:p.type,caption:p.caption||'',image:p.image||'',songUrl:p.song_url||'',songTitle:p.song_title||'',likes:p.likes||0,likedBy:p.liked_by||[],savedBy:p.saved_by||[],comments:comments.map(c=>{const cu=um.get(c.userId);return {...c,userName:cu?.username||c.userName||'user',avatar:cu?.avatar||c.avatar||''}}),mentions:mentionUsers,username:u?.username||'user',name:u?.name||'User',avatar:u?.avatar||'U',createdAt:p.created_at}
+  const mentionIds=Array.isArray(p.mentions)?p.mentions:[]; let mentionUsers=[]; if(mentionIds.length){const mr=await db.from('users').select('*').in('id',mentionIds); mentionUsers=(mr.data||[]).map(x=>safeUser(x))} return {id:p.id,userId:p.user_id,type:p.type,caption:p.caption||'',image:p.image||'',songUrl:p.song_url||'',songTitle:p.song_title||'',likes:p.likes||0,likedBy:p.liked_by||[],savedBy:p.saved_by||[],commentsCount:comments.length,comments:comments.map(c=>{const cu=um.get(c.userId);return {...c,userName:cu?.username||c.userName||'user',avatar:cu?.avatar||c.avatar||''}}),mentions:mentionUsers,username:u?.username||'user',name:u?.name||'User',avatar:u?.avatar||'U',createdAt:p.created_at}
 }
 const AUTH_SECRET=String(process.env.AUTH_SECRET||'change-this-hyper-secret').trim();
 function b64url(x){return Buffer.from(x).toString('base64url')}
@@ -307,7 +307,8 @@ app.get('/api/trending/mixed',async(req,res)=>{try{
   }
   // Shorts stay in the dedicated Shorts tab. Home gets long/non-short videos.
   const shortsOnly=String(req.query.shorts||'')==='1';
-  const homeMixed=mixed.filter(x=>!['short','shortVideo'].includes(x.kind));
+  const isExternalShort=x=>['newsVideo','musicVideo','comedyVideo','movie','storyVideo','motivationalVideo','viralVideo','reelVideo','shortVideo'].includes(x.kind)&&Number(x.item?.duration||0)>0&&Number(x.item.duration)<=90;
+  const homeMixed=mixed.filter(x=>!['short','shortVideo'].includes(x.kind)&&!isExternalShort(x));
   const shortMixed=mixed.filter(x=>x.kind==='shortVideo' || x.kind==='short');
   // Each refresh gets a different order, while every external video still has an embeddable URL.
   const sourceMixed=shortsOnly?shortMixed:homeMixed;
