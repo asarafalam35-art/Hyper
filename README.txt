@@ -58,3 +58,10 @@ RECOMMENDED PRODUCTION SETUP:
 4. Keep AUTH_SECRET the same across deployments if you use it as an environment variable.
 5. Existing browser login is kept using a long-lived signed Hyper auth cookie; the server also keeps the session row in the database when Supabase is enabled.
 6. Uploaded media currently stored as post/story data is preserved when the backing database/disk is persistent.
+
+v46 UI FIXES
+- Removed duplicate bottom navigation bar.
+- Fixed upload/create button: missing optional mention fields no longer crash createOpen().
+- Long external video cards now show the title only once.
+- Shorts right-side actions are exactly Like, Comment, Share, Save; comment uses a comment bubble instead of a second heart.
+- Short Follow button now has a reliable click handler and visible Following state.
