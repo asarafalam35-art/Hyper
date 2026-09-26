@@ -31,3 +31,10 @@ v26 update:
 - Create Post/Reel and Story now have Add Audio and Add Voice. Local/recorded audio can be trimmed by start/end seconds before publishing.
 - Video duration is shown as minute:second.
 - Online music catalogs may provide previews rather than unrestricted full-track audio; upload only audio you own or are authorized to use.
+
+
+v28 updates:
+- Refresh loads a newly rotated mixed feed using a fresh seed.
+- External videos include age (days ago/date) and only entries with an embeddable Hyper player are added.
+- Video cards have Like, Comment, Share and Download controls. External direct-download is not performed; Hyper-hosted videos can be downloaded.
+- External video engagement is stored locally in the browser.
