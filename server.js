@@ -304,10 +304,17 @@ app.get('/api/trending/mixed',async(req,res)=>{try{
     if(hindiReelVideos[i])mixed.push({kind:'reelVideo',item:hindiReelVideos[i]});
     if(cinema[i])mixed.push({kind:'movie',item:cinema[i]});
   }
+  // Shorts stay in the dedicated Shorts tab. Home gets long/non-short videos.
+  const shortsOnly=String(req.query.shorts||'')==='1';
+  const homeMixed=mixed.filter(x=>!['short','shortVideo'].includes(x.kind));
+  const shortMixed=mixed.filter(x=>x.kind==='shortVideo' || x.kind==='short');
   // Each refresh gets a different order, while every external video still has an embeddable URL.
-  const rot=mixed.length?Number.parseInt(refreshSeed.slice(-6),10)%mixed.length:0;
-  const freshMixed=mixed.slice(rot).concat(mixed.slice(0,rot));
-  res.json({items:freshMixed.slice(0,220),songs:songs.slice(0,150),news:news.slice(0,30),reels,shorts,movies:cinema.slice(0,30),newsVideos:allNewsVideos.slice(0,30),musicVideos:musicVideo.slice(0,30),comedyVideos:comedy.slice(0,30),storyVideos:story.slice(0,20),motivationalVideos:motivational.slice(0,20),viralVideos:viralVideos.slice(0,20),shortVideos:hindiShortVideos.slice(0,20),reelVideos:hindiReelVideos.slice(0,20)});
+  const sourceMixed=shortsOnly?shortMixed:homeMixed;
+  const rot=sourceMixed.length?Number.parseInt(refreshSeed.slice(-6),10)%sourceMixed.length:0;
+  const freshMixed=sourceMixed.slice(rot).concat(sourceMixed.slice(0,rot));
+  const shortExternal=hindiShortVideos.filter(v=>Number(v.duration||0)<=90 || !Number(v.duration));
+  const shortLocal=shorts.filter(p=>p);
+  res.json({items:freshMixed.slice(0,220),songs:songs.slice(0,150),news:news.slice(0,30),reels,shorts:shortLocal,movies:cinema.slice(0,30),newsVideos:allNewsVideos.slice(0,30),musicVideos:musicVideo.slice(0,30),comedyVideos:comedy.slice(0,30),storyVideos:story.slice(0,20),motivationalVideos:motivational.slice(0,20),viralVideos:viralVideos.slice(0,20),shortVideos:shortExternal.slice(0,30),reelVideos:hindiReelVideos.slice(0,20)});
 }catch(e){console.error(e);res.status(503).json({error:'Trending feed unavailable.'})}});
 
 app.get('/api/news/trending',async(req,res)=>{try{const r=await fetch('https://news.google.com/rss?hl=en-IN&gl=IN&ceid=IN:en');if(!r.ok)throw new Error('news unavailable');const xml=await r.text();const items=[...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0,20).map(m=>{const x=m[1];const get=k=>{const z=x.match(new RegExp('<'+k+'(?:\\s[^>]*)?>([\\s\S]*?)<\/'+k+'>'));return z?z[1].replace(/<!\[CDATA\[|\]\]>/g,'').trim():''};return {title:get('title'),link:get('link'),source:get('source')||'Google News',image:''}}).filter(x=>x.title&&x.link);res.json({news:items})}catch(e){console.error(e);res.status(503).json({error:'News unavailable.'})}});
