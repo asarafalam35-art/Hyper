@@ -1,24 +1,11 @@
-HYPER v16 - Multiple Accounts + Mentions
+Hyper v18
+- Video upload for posts/reels and stories
+- Notifications for post/reel likes, story likes, comments and mentions
+- Activity/Notifications screen
+- Trending songs shown automatically when Create/Add Story opens
+- Search returns up to 200 Apple/iTunes results
+- Existing story/post/reel features retained
+- Supabase required for persistent data
 
-Features:
-- Create more than one account on the same device.
-- Add account / Switch account buttons on profile.
-- Saved account emails are stored locally; password is never stored.
-- Login with the selected account's password.
-- Mention users in posts, reels and stories.
-- Search users by name/username and add mention chips before publishing.
-- Mentions are stored in Supabase/local data.
-- Existing v15 share/story/music/admin features retained.
-
-Render:
-Build: npm install
-Start: npm start
-
-Supabase:
-Run supabase_schema.sql. It includes safe ALTER statements for existing posts/stories tables.
-Environment variables:
-SUPABASE_URL
-SUPABASE_SERVICE_ROLE_KEY
-ADMIN_EMAIL=asarafalamt20@gmail.com
-ADMIN_PASSWORD=A2aryann
-AUTH_SECRET=<fixed random secret>
+Run supabase_schema.sql once in Supabase SQL Editor.
+Render: npm install / npm start

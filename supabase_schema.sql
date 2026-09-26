@@ -40,6 +40,17 @@ create table if not exists stories (
  created_at timestamptz default now(),
  expires_at timestamptz not null
 );
+
+create table if not exists story_likes (
+ id text primary key,
+ story_id text not null references stories(id) on delete cascade,
+ user_id text not null references users(id) on delete cascade,
+ created_at timestamptz default now(),
+ unique(story_id,user_id)
+);
+create index if not exists story_likes_story_idx on story_likes(story_id);
+create index if not exists story_likes_user_idx on story_likes(user_id);
+
 create table if not exists messages (
  id text primary key,
  from_id text not null references users(id) on delete cascade,
@@ -74,3 +85,16 @@ create index if not exists sessions_user_id_idx on sessions(user_id);
 -- v16 mention migration for existing projects
 alter table if exists public.posts add column if not exists mentions jsonb not null default '[]'::jsonb;
 alter table if exists public.stories add column if not exists mentions jsonb not null default '[]'::jsonb;
+
+
+-- v18 notifications migration
+create table if not exists notifications (
+ id text primary key,
+ user_id text not null references users(id) on delete cascade,
+ type text not null,
+ text text not null,
+ meta jsonb not null default '{}'::jsonb,
+ created_at timestamptz default now(),
+ read_at timestamptz
+);
+create index if not exists notifications_user_idx on notifications(user_id,created_at desc);
