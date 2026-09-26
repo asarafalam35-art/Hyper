@@ -38,3 +38,6 @@ v28 updates:
 - External videos include age (days ago/date) and only entries with an embeddable Hyper player are added.
 - Video cards have Like, Comment, Share and Download controls. External direct-download is not performed; Hyper-hosted videos can be downloaded.
 - External video engagement is stored locally in the browser.
+
+
+v30 update: Mixed feed and search now show ONLY playable/embeddable videos. Audio-only song cards and text-only news cards are excluded. Video cards keep thumbnail, duration, age (minutes/hours/days), Like, Comment, Share and Download/Open-source actions. One video plays at a time.

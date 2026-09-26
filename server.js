@@ -189,7 +189,10 @@ function videoAgeLabel(created){
   if(days<7)return days+' din '+(hours%24)+' ghante pehle';
   const weeks=Math.floor(days/7);
   if(weeks<5)return weeks+' hafte pehle';
-  return days+' din pehle';
+  const months=Math.floor(days/30);
+  if(months<12)return months+' month pehle';
+  const years=Math.floor(days/365);
+  return years+' year pehle';
 }
 async function fetchDailymotionVideos(queryOrChannel,limit=8,mode='search',category='Video'){
   try{
@@ -210,23 +213,43 @@ async function fetchDailymotionVideos(queryOrChannel,limit=8,mode='search',categ
 
 async function fetchMovieClips(q='movie trailer',limit=8){return fetchDailymotionVideos(q,limit,'search')}
 
+function expandSearchQueries(raw){
+  const q=String(raw||'').trim();
+  const low=q.toLowerCase();
+  const year=(q.match(/\b(19|20)\d{2}\b/)||[])[0]||'';
+  const lang=/(bhojpuri|भोजपुरी)/i.test(q)?'Bhojpuri':/(punjabi|ਪੰਜਾਬੀ|ਪنجابی)/i.test(q)?'Punjabi':/(hindi|हिंदी)/i.test(q)?'Hindi':'';
+  const terms=[];
+  const add=x=>{x=String(x||'').trim();if(x&&!terms.some(t=>t.toLowerCase()===x.toLowerCase()))terms.push(x)};
+  add(q);
+  if(/\bnew\b|latest|recent|naya|नया|latest/i.test(q)) add((year?year+' ':'')+(lang?lang+' ':'')+'latest video');
+  if(/song|gana|गाना|music/i.test(q)) add((year?year+' ':'')+(lang?lang+' ':'')+'song music video');
+  if(/news|खबर|समाचार/i.test(q)) add((year?year+' ':'')+(lang?lang+' ':'')+'news video India');
+  if(/comedy|funny|हंसी|कॉमेडी/i.test(q)) add((lang?lang+' ':'')+'comedy video');
+  if(/story|kahani|कहानी/i.test(q)) add((lang?lang+' ':'')+'story video');
+  if(/motivational|motivation|प्रेरणा/i.test(q)) add((lang?lang+' ':'')+'motivational video');
+  if(/trending|viral|वायरल/i.test(q)) add((lang?lang+' ':'')+'trending viral video India');
+  if(/old|purana|पुराना|classic/i.test(q)) add((lang?lang+' ':'')+'old classic video');
+  return terms.slice(0,5);
+}
+function searchScore(title,q){
+  const stop=new Set(['the','and','for','with','latest','new','video','song','india','hindi','bhojpuri','punjabi']);
+  const a=new Set(String(title||'').toLowerCase().replace(/[^a-z0-9\u0900-\u097f]+/gi,' ').split(/\s+/).filter(x=>x.length>1&&!stop.has(x)));
+  const b=String(q||'').toLowerCase().replace(/[^a-z0-9\u0900-\u097f]+/gi,' ').split(/\s+/).filter(x=>x.length>1&&!stop.has(x));
+  return b.reduce((n,w)=>n+(a.has(w)?2:(String(title||'').toLowerCase().includes(w)?1:0)),0);
+}
 app.get('/api/discover/search',async(req,res)=>{try{
-  const q=String(req.query.q||'').trim(); if(!q)return res.json({songs:[],news:[],movies:[],reels:[],shorts:[],videos:[],musicVideos:[],comedyVideos:[]});
-  const [songR,newsR,postsR,movieR,videoR,musicR,comedyR]=await Promise.all([
-    fetch('https://itunes.apple.com/search?term='+encodeURIComponent(q)+'&country=IN&media=music&entity=song&limit=100').catch(()=>null),
-    fetch('https://news.google.com/rss/search?q='+encodeURIComponent(q)+'&hl=hi&gl=IN&ceid=IN:hi').catch(()=>null),
-    db.from('posts').select('*').order('created_at',{ascending:false}),
-    fetchDailymotionVideos(q+' movie trailer',12,'search','Movie Clip'),
-    fetchDailymotionVideos(q,12,'search','Video'),
-    fetchDailymotionVideos(q+' music video',10,'search','Song Video'),
-    fetchDailymotionVideos(q+' comedy Hindi Bhojpuri Punjabi',10,'search','Comedy')
-  ]);
-  let songs=[]; if(songR&&songR.ok){const j=await songR.json();songs=(j.results||[]).map(x=>({trackName:x.trackName||'',artistName:x.artistName||'',collectionName:x.collectionName||'',artworkUrl100:x.artworkUrl100||'',previewUrl:x.previewUrl||'',trackViewUrl:x.trackViewUrl||'',durationSeconds:x.trackTimeMillis?Math.round(x.trackTimeMillis/1000):0,language:'search'})).filter(x=>x.trackName)}
-  let news=[]; if(newsR&&newsR.ok){const xml=await newsR.text();news=[...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0,20).map(m=>{const x=m[1];const get=k=>{const z=x.match(new RegExp('<'+k+'(?:\\s[^>]*)?>([\\s\S]*?)<\/'+k+'>'));return z?z[1].replace(/<!\[CDATA\[|\]\]>/g,'').trim():''};return {title:get('title'),link:get('link'),source:get('source')||'News'}}).filter(x=>x.title&&x.link)}
-  const all=(postsR&&postsR.data)||[]; const lower=q.toLowerCase();
-  const found=all.filter(x=>(String(x.caption||'')+' '+String(x.song_title||'')).toLowerCase().includes(lower));
-  let movies=movieR||[], videos=videoR||[], musicVideos=musicR||[], comedyVideos=comedyR||[];
-  res.json({songs:songs.slice(0,100),news,reels:found.filter(x=>x.type==='reel').slice(0,20),shorts:found.filter(x=>x.type==='short').slice(0,20),movies:movies.slice(0,12),videos:videos.slice(0,12),musicVideos:musicVideos.slice(0,10),comedyVideos:comedyVideos.slice(0,10)});
+  const q=String(req.query.q||'').trim();
+  if(!q)return res.json({videos:[],reels:[],shorts:[],musicVideos:[],comedyVideos:[],movies:[],newsVideos:[]});
+  const qs=expandSearchQueries(q);
+  const results=await Promise.all(qs.map(term=>fetchDailymotionVideos(term,18,'search','Search')));
+  const seen=new Set();
+  let videos=results.flat().filter(v=>v&&v.embedUrl&&v.id&&!seen.has(v.id)&&seen.add(v.id));
+  videos=videos.map((v,i)=>({...v,searchScore:searchScore(v.title,q)})).sort((a,b)=>b.searchScore-a.searchScore||b.createdTime-a.createdTime).slice(0,60);
+  const musicVideos=videos.filter(v=>/(song|music|audio|official|lyric)/i.test((v.title||'')+' '+(v.channel||''))).slice(0,15);
+  const comedyVideos=videos.filter(v=>/(comedy|funny|standup|jokes|hasna)/i.test((v.title||'')+' '+(v.channel||''))).slice(0,15);
+  const movies=videos.filter(v=>/(movie|film|trailer|cinema|bollywood|tollywood|teaser)/i.test((v.title||'')+' '+(v.channel||''))).slice(0,15);
+  const newsVideos=videos.filter(v=>/(news|breaking|samachar|khabar|india)/i.test((v.title||'')+' '+(v.channel||''))).slice(0,15);
+  res.json({query:q,queries:qs,videos,musicVideos,comedyVideos,movies,newsVideos,reels:[],shorts:[]});
 }catch(e){console.error(e);res.status(503).json({error:'Search unavailable.'})}});
 
 app.get('/api/trending/mixed',async(req,res)=>{try{
