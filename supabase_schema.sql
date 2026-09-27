@@ -104,3 +104,45 @@ create index if not exists notifications_user_idx on notifications(user_id,creat
 -- If you already have the Hyper database, run these once in Supabase SQL Editor:
 -- alter table posts add column if not exists category text default 'other';
 -- alter table stories add column if not exists category text default 'story';
+
+-- v53 Cloudflare R2 + Hyper monetization
+alter table if exists public.users add column if not exists created_at timestamptz default now();
+
+create table if not exists public.ad_campaigns (
+ id text primary key,
+ user_id text not null references public.users(id) on delete cascade,
+ brand text default '', title text not null, budget numeric default 0, currency text default 'INR',
+ audience text default 'all', status text default 'pending_payment', created_at timestamptz default now()
+);
+create table if not exists public.promotions (
+ id text primary key,
+ user_id text not null references public.users(id) on delete cascade,
+ post_id text default '', budget numeric default 0, currency text default 'INR',
+ audience text default 'all', status text default 'pending_payment', created_at timestamptz default now()
+);
+create table if not exists public.creator_subscriptions (
+ id text primary key,
+ subscriber_id text not null references public.users(id) on delete cascade,
+ creator_id text not null references public.users(id) on delete cascade,
+ amount numeric default 0, currency text default 'INR', status text default 'pending_payment', created_at timestamptz default now()
+);
+create table if not exists public.premium_memberships (
+ id text primary key,
+ user_id text not null references public.users(id) on delete cascade,
+ plan text not null, amount numeric default 0, currency text default 'INR', status text default 'pending_payment', created_at timestamptz default now()
+);
+create table if not exists public.transactions (
+ id text primary key,
+ user_id text not null references public.users(id) on delete cascade,
+ type text not null, reference_id text default '', amount numeric default 0, currency text default 'INR',
+ status text default 'pending', created_at timestamptz default now()
+);
+create table if not exists public.wallets (
+ user_id text primary key references public.users(id) on delete cascade,
+ balance numeric default 0, currency text default 'INR', updated_at timestamptz default now()
+);
+create index if not exists ad_campaigns_user_idx on public.ad_campaigns(user_id,created_at desc);
+create index if not exists promotions_user_idx on public.promotions(user_id,created_at desc);
+create index if not exists creator_subscriptions_subscriber_idx on public.creator_subscriptions(subscriber_id,created_at desc);
+create index if not exists creator_subscriptions_creator_idx on public.creator_subscriptions(creator_id,created_at desc);
+create index if not exists transactions_user_idx on public.transactions(user_id,created_at desc);

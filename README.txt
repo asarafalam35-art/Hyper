@@ -65,3 +65,27 @@ v46 UI FIXES
 - Long external video cards now show the title only once.
 - Shorts right-side actions are exactly Like, Comment, Share, Save; comment uses a comment bubble instead of a second heart.
 - Short Follow button now has a reliable click handler and visible Following state.
+
+=== v53 CLOUDFLARE R2 + MONETIZATION ===
+Cloudflare R2 is supported for large media uploads. The browser requests a short-lived signed PUT URL from Hyper and uploads directly to R2. R2 secrets never go to the browser.
+
+Render Environment Variables for R2:
+R2_ACCOUNT_ID=your_cloudflare_account_id
+R2_BUCKET_NAME=hyper-media
+R2_ACCESS_KEY_ID=your_r2_access_key
+R2_SECRET_ACCESS_KEY=your_r2_secret_key
+R2_PUBLIC_URL=https://your-r2-media-domain.example.com
+
+R2 endpoint uses the S3-compatible Cloudflare endpoint and region auto. Configure the R2 bucket CORS for your Hyper Render origin and use a custom R2 domain for production public media. If R2 variables are absent, Hyper keeps the older data-URL fallback with the existing 12MB local-media limit.
+
+Monetization modules added:
+- Ads/sponsored-content data model and admin tracking
+- Paid Post/Reel promotion orders
+- Creator monthly subscription orders
+- Hyper Premium orders
+- Business/Brand campaign orders
+- Transaction records and wallet table foundation
+- Profile button: Earn / Promote
+
+IMPORTANT PAYMENT NOTE:
+The v53 monetization endpoints create pending orders/transaction records. They do NOT pretend that money was received. A real payment gateway (for example a supported Indian provider) must be configured and its server-side payment verification added before orders are marked paid/active. Never put payment secrets in index.html.
